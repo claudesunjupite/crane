@@ -1104,6 +1104,18 @@
     }
     .hist-del:hover { background: #fef2f2; border-color: #fecaca; color: var(--red); }
 
+    .hist-export {
+      padding: 0.22rem 0.55rem;
+      font-size: 0.72rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 5px;
+      transition: all 0.15s;
+    }
+    .hist-export:hover { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
+
     .hist-body { overflow-x: auto; }
     .hist-body table { font-size: 0.78rem; }
     .hist-body th { font-size: 0.68rem; background: #f0f7ff; }
@@ -1136,6 +1148,239 @@
       main { padding: 1rem; }
       .form-grid { grid-template-columns: 1fr 1fr; }
     }
+
+    /* ── Print Options Modal ── */
+    .print-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,0.55);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.18s ease;
+    }
+    .print-overlay.show { display: flex; }
+
+    .print-box {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+      width: min(680px, 95vw);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(24px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+    .print-modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    .print-modal-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .print-modal-close {
+      width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid var(--border2);
+      background: transparent; color: var(--muted);
+      cursor: pointer; font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .print-modal-close:hover { background: #fef2f2; border-color: #fecaca; color: var(--red); }
+
+    .print-modal-body {
+      padding: 1.3rem 1.4rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .print-section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+      margin-bottom: 0.7rem;
+    }
+
+    .print-quick-btns {
+      display: flex; gap: 0.5rem; margin-bottom: 0.9rem; flex-wrap: wrap;
+    }
+    .print-quick-btn {
+      padding: 0.22rem 0.7rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.72rem; font-weight: 500;
+      border-radius: 20px; cursor: pointer;
+      border: 1px solid var(--border2);
+      background: #f8fafc; color: var(--text2);
+      transition: all 0.15s;
+    }
+    .print-quick-btn:hover { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+
+    .print-cols-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.5rem;
+      padding: 0.9rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .print-col-check {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.82rem; color: var(--text2);
+      cursor: pointer;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      transition: background 0.12s;
+      user-select: none;
+    }
+    .print-col-check:hover { background: #eff6ff; }
+    .print-col-check input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+
+    .print-settings-grid {
+      display: flex; flex-direction: column; gap: 0.8rem;
+      padding: 0.9rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .print-setting-item {
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .print-setting-label { font-size: 0.8rem; font-weight: 500; color: var(--text2); white-space: nowrap; min-width: 100px; }
+    .print-title-input {
+      flex: 1; padding: 0.35rem 0.7rem;
+      font-family: 'Kanit', sans-serif; font-size: 0.82rem;
+      border: 1px solid var(--border2); border-radius: 6px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .print-title-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(29,78,216,0.1); }
+
+    .print-orient-select {
+      padding: 0.35rem 0.8rem;
+      font-family: 'Kanit', sans-serif; font-size: 0.8rem;
+      border: 1px solid var(--border2); border-radius: 6px;
+      outline: none; background: #fff; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .print-orient-select:focus { border-color: var(--accent); }
+
+    .print-toggle-row {
+      display: flex; gap: 1.2rem; flex-wrap: wrap;
+    }
+    .print-toggle-label {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.8rem; color: var(--text2); cursor: pointer;
+    }
+    .print-toggle-label input { accent-color: var(--accent); cursor: pointer; }
+
+    .print-modal-foot {
+      padding: 0.9rem 1.4rem;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 0.7rem;
+      background: #f8fafc;
+    }
+
+    .btn-do-print {
+      padding: 0.45rem 1.2rem;
+      font-family: 'Kanit', sans-serif; font-size: 0.85rem; font-weight: 600;
+      border-radius: 8px; cursor: pointer; border: none;
+      background: var(--accent); color: #fff;
+      transition: all 0.15s;
+    }
+    .btn-do-print:hover { background: #1e40af; box-shadow: 0 4px 14px rgba(29,78,216,0.3); }
+
+    /* ── Print Preview (hidden on screen, shown on print) ── */
+    #printPreview { display: none; }
+
+    @media print {
+      body > *:not(#printPreview) { display: none !important; }
+      #printPreview {
+        display: block !important;
+        font-family: 'TH Sarabun New', 'Sarabun', 'Kanit', sans-serif;
+        font-size: 11pt;
+        color: #000;
+        background: #fff;
+        padding: 0;
+        margin: 0;
+      }
+      #printPreview .pr-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2.5pt solid #000;
+      }
+      #printPreview .pr-logo {
+        width: 80px;
+        filter: grayscale(100%) contrast(120%);
+        flex-shrink: 0;
+      }
+      #printPreview .pr-title-wrap { flex: 1; text-align: center; }
+      #printPreview .pr-title { font-size: 18pt; font-weight: 700; letter-spacing: 0.02em; }
+      #printPreview .pr-subtitle { font-size: 10pt; margin-top: 3px; }
+      #printPreview .pr-date { font-size: 9pt; color: #555; margin-top: 4px; }
+      #printPreview table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        font-size: 10pt;
+      }
+      #printPreview th, #printPreview td {
+        border: 1pt solid #444;
+        padding: 5pt 7pt;
+        vertical-align: middle;
+      }
+      #printPreview thead tr th {
+        background: #1a1a1a !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: 700;
+        text-align: center;
+        font-size: 9.5pt;
+        letter-spacing: 0.03em;
+      }
+      #printPreview tbody tr:nth-child(even) td {
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      #printPreview .pr-total-row td {
+        background: #ddd !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: 700;
+        border-top: 2pt solid #333;
+      }
+      #printPreview .pr-num { text-align: right; font-feature-settings: "tnum"; }
+      #printPreview .pr-center { text-align: center; }
+      #printPreview .pr-sign-area {
+        display: flex;
+        justify-content: flex-end;
+        gap: 50px;
+        margin-top: 36pt;
+        padding-top: 8pt;
+      }
+      #printPreview .pr-sign-box { text-align: center; min-width: 140px; }
+      #printPreview .pr-sign-line {
+        border-top: 1pt solid #333;
+        padding-top: 5pt;
+        margin-top: 36pt;
+        font-size: 9pt;
+      }
+      #printPreview .pr-sign-role { font-size: 8.5pt; color: #555; margin-top: 3pt; }
+      #printPreview .pr-footer-count {
+        margin-top: 10pt; font-size: 9pt; color: #555; text-align: right;
+      }
+      @page {
+        margin: 15mm;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1161,11 +1406,11 @@
   </button>
 </header>
 
-<!-- ── Confirm Delete Modal ── -->
+<!-- ── Confirm Modal ── -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
-    <div class="confirm-icon">🗑️</div>
-    <div class="confirm-title">ยืนยันการลบ</div>
+    <div class="confirm-icon" id="confirmIcon">🗑️</div>
+    <div class="confirm-title" id="confirmTitle">ยืนยันการลบ</div>
     <div class="confirm-msg" id="confirmMsg">คุณแน่ใจหรือไม่?</div>
     <div class="confirm-actions">
       <button class="btn-cancel-modal" onclick="closeConfirm()">ยกเลิก</button>
@@ -1173,6 +1418,52 @@
     </div>
   </div>
 </div>
+
+<!-- ── Print Options Modal ── -->
+<div class="print-overlay" id="printOverlay">
+  <div class="print-box">
+    <div class="print-modal-head">
+      <span class="print-modal-title">🖨 ตั้งค่าการพิมพ์</span>
+      <button class="print-modal-close" onclick="closePrintModal()">✕</button>
+    </div>
+    <div class="print-modal-body">
+      <div class="print-section-title">📋 เลือกคอลัมน์ที่จะแสดง</div>
+      <div class="print-quick-btns">
+        <button class="print-quick-btn" onclick="checkAllPrintCols(true)">เลือกทั้งหมด</button>
+        <button class="print-quick-btn" onclick="checkAllPrintCols(false)">ยกเลิกทั้งหมด</button>
+        <button class="print-quick-btn" onclick="resetPrintCols()">↺ ค่าเริ่มต้น</button>
+      </div>
+      <div class="print-cols-grid" id="printColsGrid"></div>
+      <div class="print-section-title" style="margin-top:1.2rem">⚙️ ตั้งค่าเอกสาร</div>
+      <div class="print-settings-grid">
+        <div class="print-setting-item">
+          <span class="print-setting-label">หัวข้อเอกสาร</span>
+          <input class="print-title-input" id="printDocTitle" value="ใบสรุปเงินเดือนคนขับเครน">
+        </div>
+        <div class="print-setting-item">
+          <span class="print-setting-label">การวางหน้า</span>
+          <select class="print-orient-select" id="printOrientation">
+            <option value="landscape">แนวนอน (Landscape)</option>
+            <option value="portrait">แนวตั้ง (Portrait)</option>
+          </select>
+        </div>
+        <div class="print-toggle-row">
+          <label class="print-toggle-label"><input type="checkbox" id="printShowLogo" checked> แสดงโลโก้</label>
+          <label class="print-toggle-label"><input type="checkbox" id="printShowDate" checked> แสดงวันที่พิมพ์</label>
+          <label class="print-toggle-label"><input type="checkbox" id="printShowSign" checked> แสดงช่องเซ็นชื่อ</label>
+          <label class="print-toggle-label"><input type="checkbox" id="printCalcOnly"> เฉพาะที่คำนวณแล้ว</label>
+        </div>
+      </div>
+    </div>
+    <div class="print-modal-foot">
+      <button class="btn-cancel-modal" onclick="closePrintModal()">ยกเลิก</button>
+      <button class="btn-do-print" onclick="doPrint()">🖨 พิมพ์เลย</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Print Preview (hidden on screen, visible only on print) ── -->
+<div id="printPreview"></div>
 
 <main>
 
@@ -1355,7 +1646,7 @@
         <button class="btn-sm btn-orange-fill" onclick="calcAll()">⚡ คิดทั้งหมด</button>
         <button class="btn-save-hist" onclick="saveHistory()">💾 บันทึกประวัติ</button>
         <button class="btn-sm btn-ghost" onclick="exportCSV(2)">↓ Export</button>
-        <button class="btn-sm btn-ghost" onclick="window.print()">🖨 พิมพ์</button>
+        <button class="btn-sm btn-ghost" onclick="openPrintModal()">🖨 พิมพ์</button>
       </div>
       <div class="bulk-bar2" id="bulkBar2" style="display:none">
         <span class="bulk-label">↩ โหมดเลือกย้ายกลับ</span>
@@ -1456,7 +1747,9 @@
     <div class="tab-panel" id="panel3">
       <div class="tab-toolbar">
         <span class="section-label">กดที่รายการเพื่อดูรายละเอียด — ประวัติจะถูกบันทึกเมื่อกด "💾 บันทึกประวัติ"</span>
-        <button class="btn-sm btn-ghost" onclick="exportHistoryCSV()">↓ Export ประวัติ</button>
+        <button class="btn-sm btn-ghost" onclick="exportHistoryCSV()">↓ Export ประวัติทั้งหมด</button>
+        <button class="btn-sm btn-ghost" onclick="saveDataFile()" title="บันทึกข้อมูลทั้งหมดเป็นไฟล์ .json">💾 บันทึกข้อมูล</button>
+        <button class="btn-sm btn-ghost" onclick="loadDataFile()" title="โหลดข้อมูลจากไฟล์ .json">📂 โหลดข้อมูล</button>
       </div>
       <div id="histList" class="hist-list">
         <div class="hist-empty">
@@ -1547,10 +1840,25 @@
   // ── Confirm modal ──
   let _pendingAction = null;
 
-  function confirmDelete(name, actionFn) {
+  function showConfirmModal({ icon = '🗑️', title = 'ยืนยันการลบ', msg, okLabel = 'ลบเลย', okClass = 'btn-confirm-del' }, actionFn) {
     _pendingAction = actionFn;
-    $('confirmMsg').innerHTML = `ต้องการลบ <span class="confirm-name">"${name}"</span> ออกจากระบบหรือไม่?`;
+    $('confirmIcon').textContent = icon;
+    $('confirmTitle').textContent = title;
+    $('confirmMsg').innerHTML = msg;
+    const btn = $('confirmOkBtn');
+    btn.textContent = okLabel;
+    btn.className = okClass;
     $('confirmOverlay').classList.add('show');
+  }
+
+  function confirmDelete(name, actionFn) {
+    showConfirmModal({
+      icon: '🗑️',
+      title: 'ยืนยันการลบ',
+      msg: `ต้องการลบ <span class="confirm-name">"${name}"</span> ออกจากระบบหรือไม่?`,
+      okLabel: 'ลบเลย',
+      okClass: 'btn-confirm-del'
+    }, actionFn);
   }
 
   function execConfirm() {
@@ -1702,19 +2010,39 @@
 
   function bulkMoveBack() {
     if (!selectedJobs.size) return;
-    const count = selectedJobs.size;
-    selectedJobs.forEach(jid => {
+
+    const calcCount = [...selectedJobs].filter(jid => {
       const job = jobList.find(j => j.id === jid);
-      if (job) {
-        const emp = employees.find(e => e.id === job.empId);
-        if (emp) emp.inJob = false;
-      }
-    });
-    jobList = jobList.filter(j => !selectedJobs.has(j.id));
-    toggleBulkMode2();
-    renderT1(); renderT2(); updateSummary(); saveToStorage();
-    switchTab(1);
-    setTimeout(() => showToast(`ย้ายกลับ ${count} คน เรียบร้อยแล้ว`, 'success'), 100);
+      return job && job.total !== null;
+    }).length;
+
+    const doMove = () => {
+      const count = selectedJobs.size;
+      selectedJobs.forEach(jid => {
+        const job = jobList.find(j => j.id === jid);
+        if (job) {
+          const emp = employees.find(e => e.id === job.empId);
+          if (emp) emp.inJob = false;
+        }
+      });
+      jobList = jobList.filter(j => !selectedJobs.has(j.id));
+      toggleBulkMode2();
+      renderT1(); renderT2(); updateSummary(); saveToStorage();
+      switchTab(1);
+      setTimeout(() => showToast(`ย้ายกลับ ${count} คน เรียบร้อยแล้ว`, 'success'), 100);
+    };
+
+    if (calcCount > 0) {
+      showConfirmModal({
+        icon: '⚠️',
+        title: 'ยังไม่ได้บันทึกประวัติ',
+        msg: `มี <strong>${calcCount} คน</strong> ที่คิดเงินเดือนแล้วแต่<strong>ยังไม่ได้บันทึกประวัติ</strong><br>ถ้าย้ายกลับตอนนี้ ข้อมูลการคิดเงินจะหายไปทั้งหมด`,
+        okLabel: 'ย้ายกลับเลย',
+        okClass: 'btn-confirm-del'
+      }, doMove);
+    } else {
+      doMove();
+    }
   }
 
   function bulkMoveSelected() {
@@ -2555,6 +2883,7 @@
             <span class="hist-time">${timeStr} น.</span>
             <span class="hist-badge">👤 ${h.jobs.length} คน</span>
             <span class="hist-total">${fmt(grandTotal)}</span>
+            <button class="hist-export" onclick="event.stopPropagation(); exportSnapshotCSV(${h.hid})" title="Export ชุดนี้เป็น CSV">↓ CSV</button>
             <button class="hist-del" onclick="event.stopPropagation(); confirmDelete('ประวัติ ${dateStr} ${timeStr}', () => deleteHistory(${h.hid}))">✕</button>
           </div>
           ${detailTable}
@@ -2580,6 +2909,263 @@
     a.href = URL.createObjectURL(blob);
     a.download = `crane_payroll_history_${Date.now()}.csv`;
     a.click();
+  }
+
+  // ─────────────────────────────────────────
+  // Print
+  // ─────────────────────────────────────────
+  const PRINT_COLS = [
+    { key:'no',          label:'ลำดับ',           def:true,  numeric:true,  fn:(j,i)=>i+1 },
+    { key:'fn',          label:'ชื่อ',             def:true,  numeric:false, fn:j=>j.fn },
+    { key:'ln',          label:'นามสกุล',          def:true,  numeric:false, fn:j=>j.ln },
+    { key:'acc',         label:'เลขบัญชี',         def:true,  numeric:false, fn:j=>j.acc||'—' },
+    { key:'bank',        label:'ธนาคาร',           def:true,  numeric:false, fn:j=>j.bank||'—' },
+    { key:'dept',        label:'บริษัท',           def:false, numeric:false, fn:j=>j.dept||'—' },
+    { key:'tc',          label:'หน้าที่',          def:false, numeric:false, fn:j=>j.tc||'—' },
+    { key:'tcNum',       label:'TC',               def:true,  numeric:false, fn:j=>j.tcNum||'—' },
+    { key:'unitName',    label:'หน่วยงาน',         def:true,  numeric:false, fn:j=>j.unitName||'—' },
+    { key:'period',      label:'งวด',              def:false, numeric:false, fn:j=>j.period||'—' },
+    { key:'wDays',       label:'จำนวนวัน',         def:false, numeric:true,  fn:j=>j.wDays },
+    { key:'otH',         label:'OT (ชม.)',         def:false, numeric:true,  fn:j=>j.otH },
+    { key:'advance',     label:'เงินเบิก',         def:false, numeric:true,  fn:j=>j.advance ? fmtNum(j.advance) : '—' },
+    { key:'otherIncome', label:'รายได้อื่นๆ',      def:false, numeric:true,  fn:j=>j.otherIncome ? fmtNum(j.otherIncome) : '—' },
+    { key:'otherExpense',label:'รายจ่ายอื่นๆ',     def:false, numeric:true,  fn:j=>j.otherExpense ? fmtNum(j.otherExpense) : '—' },
+    { key:'basePay',     label:'รายได้พื้นฐาน',   def:false, numeric:true,  fn:j=>j.basePay!=null ? fmtNum(j.basePay) : '—' },
+    { key:'otPay',       label:'ค่า OT',           def:false, numeric:true,  fn:j=>j.otPay!=null ? fmtNum(j.otPay) : '—' },
+    { key:'total',       label:'ยอดก่อนภาษี',     def:true,  numeric:true,  fn:j=>j.total!=null ? fmtNum(j.total) : '—' },
+  ];
+
+  function fmtNum(n) {
+    return '฿' + Number(n).toLocaleString('th-TH', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+
+  function openPrintModal() {
+    if (!jobList.length) { showToast('ไม่มีข้อมูลในตารางงาน', 'warning'); return; }
+    // Build column checkboxes
+    const grid = $('printColsGrid');
+    grid.innerHTML = PRINT_COLS.map(c => `
+      <label class="print-col-check">
+        <input type="checkbox" id="pc_${c.key}" ${c.def ? 'checked' : ''}>
+        ${c.label}
+      </label>`).join('');
+    $('printOverlay').classList.add('show');
+  }
+
+  function closePrintModal() {
+    $('printOverlay').classList.remove('show');
+  }
+
+  function checkAllPrintCols(val) {
+    PRINT_COLS.forEach(c => { const el = $(`pc_${c.key}`); if(el) el.checked = val; });
+  }
+
+  function resetPrintCols() {
+    PRINT_COLS.forEach(c => { const el = $(`pc_${c.key}`); if(el) el.checked = c.def; });
+  }
+
+  function doPrint() {
+    // Gather selected columns
+    const cols = PRINT_COLS.filter(c => { const el = $(`pc_${c.key}`); return el && el.checked; });
+    if (!cols.length) { showToast('กรุณาเลือกอย่างน้อย 1 คอลัมน์', 'warning'); return; }
+
+    const docTitle    = $('printDocTitle').value || 'ใบสรุปเงินเดือนคนขับเครน';
+    const orientation = $('printOrientation').value;
+    const showLogo    = $('printShowLogo').checked;
+    const showDate    = $('printShowDate').checked;
+    const showSign    = $('printShowSign').checked;
+    const calcOnly    = $('printCalcOnly').checked;
+
+    let data = filterJobList();
+    if (calcOnly) data = data.filter(j => j.total !== null);
+    if (!data.length) { showToast('ไม่มีรายการที่จะพิมพ์', 'warning'); return; }
+
+    const now = new Date();
+    const dateStr = fmtDate(now, true);
+    const timeStr = fmtTime(now);
+    const logoSrc = document.querySelector('.logo-img')?.src || '';
+
+    // Header
+    let headerHtml = `<div class="pr-header">`;
+    if (showLogo && logoSrc) {
+      headerHtml += `<img class="pr-logo" src="${logoSrc}" alt="logo">`;
+    }
+    headerHtml += `<div class="pr-title-wrap">
+        <div class="pr-title">${docTitle}</div>
+        <div class="pr-subtitle">บริษัท ซัน จูปิเตอร์ จำกัด (Sun Jupiter Co., Ltd.)</div>
+        ${showDate ? `<div class="pr-date">วันที่พิมพ์: ${dateStr} เวลา ${timeStr} น.</div>` : ''}
+      </div>
+    </div>`;
+
+    // Table header
+    const thead = `<thead><tr>${cols.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
+
+    // Table body
+    let totalSum = 0;
+    const tbody = `<tbody>${data.map((j, i) => {
+      const tds = cols.map(c => {
+        const val = c.fn(j, i);
+        return `<td class="${c.numeric ? 'pr-num' : ''}">${val}</td>`;
+      }).join('');
+      if (j.total != null) totalSum += Number(j.total);
+      return `<tr>${tds}</tr>`;
+    }).join('')}
+    <tr class="pr-total-row">${cols.map((c,ci) => {
+      if (c.key === 'no')    return `<td class="pr-center" colspan="1">&nbsp;</td>`;
+      if (c.key === 'fn')    return `<td colspan="1"><strong>รวมทั้งหมด</strong></td>`;
+      if (c.key === 'total') return `<td class="pr-num"><strong>${fmtNum(totalSum)}</strong></td>`;
+      return `<td></td>`;
+    }).join('')}</tr>
+    </tbody>`;
+
+    // Signature area
+    const signHtml = showSign ? `
+      <div class="pr-sign-area">
+        <div class="pr-sign-box">
+          <div class="pr-sign-line">ลงชื่อ .................................................</div>
+          <div class="pr-sign-role">ผู้จัดทำ / Prepared by</div>
+        </div>
+        <div class="pr-sign-box">
+          <div class="pr-sign-line">ลงชื่อ .................................................</div>
+          <div class="pr-sign-role">ผู้ตรวจสอบ / Checked by</div>
+        </div>
+        <div class="pr-sign-box">
+          <div class="pr-sign-line">ลงชื่อ .................................................</div>
+          <div class="pr-sign-role">ผู้อนุมัติ / Approved by</div>
+        </div>
+      </div>` : '';
+
+    const footerHtml = `<div class="pr-footer-count">จำนวนรายการทั้งหมด: ${data.length} คน</div>`;
+
+    // Set page orientation via a style tag
+    const orientStyle = `<style>@page { size: A4 ${orientation}; margin: 15mm; }</style>`;
+
+    // Populate #printPreview
+    $('printPreview').innerHTML = `
+      ${orientStyle}
+      ${headerHtml}
+      <table>${thead}${tbody}</table>
+      ${footerHtml}
+      ${signHtml}
+    `;
+
+    closePrintModal();
+    setTimeout(() => window.print(), 100);
+  }
+
+  // Close print modal on overlay click
+  $('printOverlay').addEventListener('click', e => {
+    if (e.target === $('printOverlay')) closePrintModal();
+  });
+
+  // ─────────────────────────────────────────
+  // Export single snapshot CSV
+  // ─────────────────────────────────────────
+  function exportSnapshotCSV(hid) {
+    const h = payHistory.find(x => x.hid === hid);
+    if (!h) return;
+    const d = h.timestamp;
+    const dateStr = fmtDate(d);
+    const timeStr = fmtTime(d);
+    const hdr = ['วันที่','เวลา','ชื่อ','นามสกุล','บริษัท','หน้าที่','งวด','TC','หน่วยงาน','จำนวนวัน','OT(ชม.)','รายได้อื่นๆ','หมายเหตุรายได้','รายจ่ายอื่นๆ','หมายเหตุรายจ่าย','หักเงินเบิก','รายได้พื้นฐาน','ค่าOT','ยอดก่อนภาษี'];
+    const rows = h.jobs.map(j => [
+      dateStr, timeStr, j.fn, j.ln, j.dept, j.tc, j.period,
+      j.tcNum||'', j.unitName||'',
+      j.wDays, j.otH,
+      j.otherIncome||0, j.otherIncomeNote||'',
+      j.otherExpense||0, j.otherExpenseNote||'',
+      j.advance, j.basePay??'', j.otPay??'', j.total??''
+    ]);
+    const csv = [hdr, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const safeName = dateStr.replace(/\s/g,'_') + '_' + timeStr.replace(':','');
+    a.download = `crane_payroll_${safeName}.csv`;
+    a.click();
+  }
+
+  // ─────────────────────────────────────────
+  // Save / Load full data file (JSON)
+  // ─────────────────────────────────────────
+  function saveDataFile() {
+    const data = {
+      employees,
+      jobList,
+      payHistory: payHistory.map(h => ({
+        ...h,
+        timestamp: h.timestamp instanceof Date ? h.timestamp.toISOString() : h.timestamp
+      })),
+      uid
+    };
+    const json = JSON.stringify(data, null, 2);
+    const ts = new Date();
+    const fname = `crane_payroll_${ts.getFullYear()+543}_${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}_${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}.json`;
+
+    if (window.showSaveFilePicker) {
+      window.showSaveFilePicker({
+        suggestedName: fname,
+        types: [{ description: 'JSON Backup', accept: { 'application/json': ['.json'] } }]
+      }).then(fh => fh.createWritable())
+        .then(w => w.write(json).then(() => w.close()))
+        .then(() => showToast('💾 บันทึกไฟล์ข้อมูลสำเร็จ', 'success'))
+        .catch(e => { if (e.name !== 'AbortError') showToast('บันทึกไฟล์ไม่สำเร็จ: ' + e.message, 'error'); });
+    } else {
+      // fallback: download
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      a.click();
+      showToast('💾 ดาวน์โหลดไฟล์ backup สำเร็จ', 'success');
+    }
+  }
+
+  function loadDataFile() {
+    if (window.showOpenFilePicker) {
+      window.showOpenFilePicker({
+        types: [{ description: 'JSON Backup', accept: { 'application/json': ['.json'] } }],
+        multiple: false
+      }).then(([fh]) => fh.getFile())
+        .then(file => file.text())
+        .then(text => _importData(text))
+        .catch(e => { if (e.name !== 'AbortError') showToast('โหลดไฟล์ไม่สำเร็จ: ' + e.message, 'error'); });
+    } else {
+      // fallback: file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        file.text().then(text => _importData(text));
+      };
+      input.click();
+    }
+  }
+
+  function _importData(text) {
+    try {
+      const data = JSON.parse(text);
+      if (!Array.isArray(data.employees) || !Array.isArray(data.jobList) || !Array.isArray(data.payHistory)) {
+        throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
+      }
+      showConfirmModal({
+        icon: '📂',
+        title: 'ยืนยันการโหลดข้อมูล',
+        msg: `ต้องการโหลดข้อมูลจากไฟล์นี้หรือไม่?<br><span style="color:var(--red);font-size:0.82rem">⚠️ ข้อมูลปัจจุบันจะถูกแทนที่ทั้งหมด</span>`,
+        okLabel: 'โหลดเลย',
+        okClass: 'btn-confirm-del'
+      }, () => {
+        employees  = data.employees;
+        jobList    = data.jobList;
+        uid        = data.uid || uid;
+        payHistory = data.payHistory.map(h => ({ ...h, timestamp: new Date(h.timestamp) }));
+        renderT1(); renderT2(); renderHistory(); updateSummary(); saveToStorage();
+        showToast('📂 โหลดข้อมูลสำเร็จ', 'success');
+      });
+    } catch(e) {
+      showToast('ไฟล์ไม่ถูกต้อง: ' + e.message, 'error');
+    }
   }
 
   // ─────────────────────────────────────────
