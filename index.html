@@ -1,590 +1,2695 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>การทางพิเศษ — สร้างรายงาน Excel</title>
+  <title>ระบบคิดเงินเดือนคนขับเครน</title>
   <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #f1f5f9;
+      --surface:  #ffffff;
+      --border:   #e2e8f0;
+      --border2:  #cbd5e1;
+      --accent:   #1d4ed8;
+      --accent2:  #0369a1;
+      --green:    #16a34a;
+      --red:      #dc2626;
+      --orange:   #ea580c;
+      --text:     #0f172a;
+      --text2:    #334155;
+      --muted:    #94a3b8;
+      --shadow:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md:0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
+      background: var(--bg);
+      color: var(--text);
       font-family: 'Kanit', sans-serif;
-      background: #f0f4f8;
+      font-weight: 400;
       min-height: 100vh;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 2rem 1rem;
     }
-    .topbar {
-      width: 100%; max-width: 620px;
-      display: flex; align-items: center; gap: 0.75rem;
-      margin-bottom: 1rem; padding: 0 0.25rem;
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 3px solid var(--accent);
+      box-shadow: var(--shadow);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .topbar img { height: 42px; width: auto; object-fit: contain; }
-    .company-name { font-size: 1rem; font-weight: 600; color: #1e2d4a; line-height: 1.3; }
-    .company-sub  { font-size: 0.72rem; color: #64748b; font-weight: 400; }
+
+    .logo { font-size: 2rem; display:flex; align-items:center; }
+    .logo-img {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
+    }
+
+    .header-text h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+    }
+
+    .header-text p {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+
+    .header-date {
+      margin-left: auto;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--accent);
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.1rem;
+    }
+
+    .header-date .hd-date {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text2);
+    }
+
+    .header-date .hd-time {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-feature-settings: "tnum";
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    /* ── Confirm modal ── */
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.45);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .confirm-overlay.show { display: flex; }
+
+    .confirm-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      padding: 1.75rem 2rem;
+      max-width: 380px;
+      width: 90%;
+      animation: popIn 0.18s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.93); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .confirm-icon { font-size: 2rem; text-align: center; margin-bottom: 0.75rem; }
+
+    .confirm-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+
+    .confirm-msg {
+      font-size: 0.85rem;
+      color: var(--text2);
+      text-align: center;
+      font-weight: 300;
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+
+    .confirm-name {
+      font-weight: 600;
+      color: var(--red);
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .confirm-actions button {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 7px;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.16s;
+      border: 1px solid transparent;
+    }
+
+    .btn-cancel-modal {
+      background: #f8fafc;
+      border-color: var(--border2) !important;
+      color: var(--text2);
+    }
+
+    .btn-cancel-modal:hover { background: var(--border); }
+
+    .btn-confirm-del {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-confirm-del:hover { background: #b91c1c; box-shadow: 0 3px 10px rgba(220,38,38,0.35); }
+
+    /* ── Layout ── */
+    main { padding: 1.75rem 2rem; max-width: 1700px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* ── Card ── */
     .card {
-      background: #fff; border-radius: 18px;
-      box-shadow: 0 4px 32px rgba(0,0,0,0.09);
-      padding: 2.5rem 2.5rem 2rem;
-      width: 100%; max-width: 620px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
     }
-    .header { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.4rem; }
-    h1 { font-size: 1.4rem; font-weight: 600; color: #1e2d4a; }
-    .subtitle { font-size: 0.85rem; color: #64748b; margin-bottom: 2rem; margin-left: 52px; }
-    .divider { height: 1px; background: #e8ecf0; margin: 1.5rem 0; }
-    .section-label {
-      display: flex; align-items: center; gap: 0.5rem;
-      font-size: 0.88rem; font-weight: 500; color: #374151;
-      margin-bottom: 0.55rem;
+
+    .card-head {
+      padding: 0.9rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.6rem;
     }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-title .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-blue   { background: var(--accent); }
+    .dot-green  { background: var(--green); }
+
     .badge {
-      font-size: 0.7rem; color: #64748b;
-      background: #f1f5f9; border-radius: 20px; padding: 1px 7px;
+      background: #f1f5f9;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
     }
-    .required { color: #ef4444; font-size: 0.75rem; }
-    .dropzone {
-      border: 2px dashed #cbd5e1; border-radius: 12px;
-      padding: 1.4rem 1rem; text-align: center; cursor: pointer;
-      transition: border-color .18s, background .18s;
-      background: #f8fafc; position: relative;
+
+    .badge-blue  { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
+    .badge-green { background: #f0fdf4; border-color: #bbf7d0; color: var(--green); }
+
+    /* ── Form ── */
+    .form-body { padding: 1.25rem 1.4rem; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+      gap: 0.85rem;
     }
-    .dropzone:hover, .dropzone.over { border-color: #3b82f6; background: #eff6ff; }
-    .dropzone input[type="file"] {
-      position: absolute; inset: 0; opacity: 0;
-      cursor: pointer; width: 100%; height: 100%;
+
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+
+    .form-group label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text2);
+      letter-spacing: 0.04em;
     }
-    .dz-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
-    .dz-text { font-size: 0.82rem; color: #6b7280; }
-    .dz-text strong { color: #2563eb; }
-    .file-list { list-style: none; margin-top: .55rem; display: flex; flex-wrap: wrap; gap: .35rem; }
-    .file-list li {
-      font-size: .76rem; color: #374151;
-      background: #f0fdf4; border: 1px solid #bbf7d0;
-      border-radius: 20px; padding: 2px 10px;
-      display: flex; align-items: center; gap: 4px;
+
+    .form-group input,
+    .form-group select {
+      background: #f8fafc;
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 0.55rem 0.8rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.88rem;
+      outline: none;
+      border-radius: 6px;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      width: 100%;
     }
-    .file-list li::before { content: '✓'; color: #16a34a; font-weight: 600; }
-    .upload-group { margin-bottom: 1.2rem; }
-    .btn {
-      display: flex; align-items: center; justify-content: center; gap: .5rem;
-      width: 100%; padding: .85rem;
-      background: #1e3a8a; color: #fff; border: none;
-      border-radius: 11px; font-family: 'Kanit', sans-serif;
-      font-size: 1rem; font-weight: 500; cursor: pointer;
-      transition: background .18s, opacity .18s; margin-top: 1.6rem;
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
     }
-    .btn:hover:not(:disabled) { background: #1d4ed8; }
-    .btn:disabled { opacity: .55; cursor: not-allowed; }
-    .status {
-      display: none; margin-top: 1rem; padding: .7rem 1rem;
-      border-radius: 9px; font-size: .88rem;
-      align-items: center; gap: .5rem;
+
+    .form-group select { cursor: pointer; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.6rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 7px;
+      transition: all 0.18s;
+      margin-top: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
     }
-    .status.show { display: flex; }
-    .status.loading { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-    .status.error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-    .status.success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-    .spinner {
-      width: 16px; height: 16px; flex-shrink: 0;
-      border: 2px solid #bfdbfe; border-top-color: #1d4ed8;
-      border-radius: 50%; animation: spin .75s linear infinite;
+
+    .btn-primary:hover {
+      background: #1e40af;
+      box-shadow: 0 4px 14px rgba(29,78,216,0.3);
+      transform: translateY(-1px);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .footer { margin-top: 1rem; font-size: .73rem; color: #94a3b8; text-align: center; }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ── Toolbar buttons ── */
+    .toolbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+    .btn-sm {
+      padding: 0.35rem 0.9rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.16s;
+      border: 1px solid transparent;
+    }
+
+    .btn-green-fill { background: var(--green); color: #fff; }
+    .btn-green-fill:hover { background: #15803d; box-shadow: 0 3px 10px rgba(22,163,74,0.3); }
+
+    .btn-ghost { background: transparent; border-color: var(--border2); color: var(--text2); }
+    .btn-ghost:hover { background: #f8fafc; border-color: var(--accent); color: var(--accent); }
+
+    .btn-orange-fill { background: var(--orange); color: #fff; }
+    .btn-orange-fill:hover { background: #c2410c; box-shadow: 0 3px 10px rgba(234,88,12,0.3); }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+
+    thead tr { background: #f8fafc; }
+
+    th {
+      padding: 0.65rem 0.9rem;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text2);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      border-bottom: 2px solid var(--border);
+    }
+
+    th.center { text-align: center; }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+
+    td { padding: 0.6rem 0.9rem; vertical-align: middle; white-space: nowrap; }
+    td.center { text-align: center; }
+
+    .td-idx { color: var(--muted); font-size: 0.72rem; font-weight: 500; text-align: center; }
+
+    .td-name { font-weight: 500; color: var(--text); }
+
+    .td-acct { color: var(--text2); font-size: 0.8rem; font-feature-settings: "tnum"; }
+
+    /* Bank chips */
+    .bank-chip {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .bank-BBL   { background: #dbeafe; color: #1d4ed8; }
+    .bank-KBank { background: #dcfce7; color: #15803d; }
+    .bank-KTB   { background: #e0f2fe; color: #0369a1; }
+    .bank-SCB   { background: #f3e8ff; color: #7e22ce; }
+    .bank-BAY   { background: #fef9c3; color: #a16207; }
+    .bank-ttb   { background: #cffafe; color: #0e7490; }
+    .bank-UOB   { background: #fee2e2; color: #b91c1c; }
+
+    /* Role chip */
+    .role-chip {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    .role-driver  { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .role-signaler { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+    /* Period chip */
+    .period-chip {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: #f1f5f9;
+      color: var(--text2);
+      border: 1px solid var(--border2);
+    }
+
+    /* Company */
+    .td-company { font-weight: 500; font-size: 0.82rem; }
+
+    /* Number cells in Table 2 */
+    .td-num { font-feature-settings: "tnum"; color: var(--text2); }
+
+    /* Inline input for Table 2 */
+    .t2-input {
+      background: #f8fafc;
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 0.3rem 0.5rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.8rem;
+      border-radius: 5px;
+      outline: none;
+      width: 80px;
+      transition: border-color 0.15s;
+      font-feature-settings: "tnum";
+    }
+
+    .t2-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(29,78,216,0.1); }
+
+    .t2-select {
+      background: #f8fafc;
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 0.3rem 0.5rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.8rem;
+      border-radius: 5px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .t2-select:focus { border-color: var(--accent); }
+
+    /* Salary cells */
+    .sal-base  { color: var(--text2); font-feature-settings: "tnum"; }
+    .sal-ot    { color: var(--orange); font-feature-settings: "tnum"; }
+    .sal-total { color: var(--green); font-weight: 600; font-feature-settings: "tnum"; font-size: 0.88rem; }
+    .sal-pend  { color: var(--muted); font-size: 0.75rem; }
+
+    /* Calc button */
+    .btn-calc {
+      padding: 0.3rem 0.8rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.16s;
+      white-space: nowrap;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--accent);
+    }
+
+    .btn-calc:hover { background: var(--accent); color: #fff; }
+
+    .btn-calc.done {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: var(--green);
+    }
+
+    .btn-calc.done:hover { background: var(--green); color: #fff; }
+
+    /* Add to job button */
+    .btn-add-job {
+      padding: 0.28rem 0.75rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.16s;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: var(--green);
+      white-space: nowrap;
+    }
+
+    .btn-add-job:hover { background: var(--green); color: #fff; }
+    .btn-add-job:disabled { background: #f1f5f9; border-color: var(--border); color: var(--muted); cursor: not-allowed; }
+
+    /* Delete button */
+    .btn-del {
+      padding: 0.28rem 0.6rem;
+      font-size: 0.75rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 5px;
+      transition: all 0.16s;
+    }
+
+    .btn-del:hover { background: #fef2f2; border-color: #fecaca; color: var(--red); }
+
+    /* Move back button */
+    .btn-move {
+      padding: 0.28rem 0.75rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.16s;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .btn-move:hover { background: var(--accent); color: #fff; }
+
+    /* Suspend button */
+    .btn-suspend {
+      padding: 0.28rem 0.75rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.16s;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: var(--orange);
+      white-space: nowrap;
+    }
+    .btn-suspend:hover { background: var(--orange); color: #fff; }
+
+    /* Unsuspend button */
+    .btn-unsuspend {
+      padding: 0.28rem 0.75rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.16s;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: var(--green);
+      white-space: nowrap;
+    }
+    .btn-unsuspend:hover { background: var(--green); color: #fff; }
+
+    /* Status chips */
+    .status-chip {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    .status-active    { background: #f0fdf4; color: var(--green);  border: 1px solid #bbf7d0; }
+    .status-injob     { background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe; }
+    .status-suspended { background: #fef2f2; color: var(--red);    border: 1px solid #fecaca; }
+
+    /* Suspended row */
+    tr.row-suspended td { opacity: 0.45; }
+
+    /* Rate type chip */
+    .rate-type-chip {
+      display: inline-block;
+      padding: 0.1rem 0.45rem;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      background: #eff6ff;
+      color: var(--accent);
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--muted);
+    }
+
+    .empty .ei { font-size: 2.2rem; margin-bottom: 0.5rem; opacity: 0.4; }
+    .empty p { font-size: 0.85rem; font-weight: 300; }
+
+    /* Footer summary */
+    .card-foot {
+      padding: 0.85rem 1.4rem;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .sum-item { display: flex; flex-direction: column; gap: 0.1rem; }
+    .sum-label { font-size: 0.67rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .sum-value { font-size: 1rem; font-weight: 600; color: var(--text); font-feature-settings: "tnum"; }
+    .sum-value.highlight { color: var(--green); font-size: 1.1rem; }
+
+    /* Row animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .row-new { animation: fadeIn 0.25s ease forwards; }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      background: #f8fafc;
+      padding: 0 1.4rem;
+    }
+
+    .tab-btn {
+      position: relative;
+      padding: 0.85rem 1.4rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: color 0.18s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transition: transform 0.2s ease;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .tab-btn:hover { color: var(--text2); }
+
+    .tab-btn.active {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .tab-btn.active::after { transform: scaleX(1); }
+
+    .tab-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.1rem 0.5rem;
+      border-radius: 20px;
+      transition: all 0.18s;
+    }
+
+    .tab-btn:not(.active) .tab-badge {
+      background: #f1f5f9;
+      color: var(--muted);
+      border: 1px solid var(--border2);
+    }
+
+    .tab-btn.active .tab-badge {
+      background: #eff6ff;
+      color: var(--accent);
+      border: 1px solid #bfdbfe;
+    }
+
+    .tab-btn.active.green-tab { color: var(--green); }
+    .tab-btn.active.green-tab::after { background: var(--green); }
+    .tab-btn.active.green-tab .tab-badge {
+      background: #f0fdf4;
+      color: var(--green);
+      border-color: #bbf7d0;
+    }
+
+    .tab-btn.purple-tab.active { color: #7c3aed; }
+    .tab-btn.purple-tab.active::after { background: #7c3aed; }
+    .tab-btn.purple-tab.active .tab-badge {
+      background: #f5f3ff;
+      color: #7c3aed;
+      border-color: #ddd6fe;
+    }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Toolbar */
+    .tab-toolbar {
+      padding: 0.75rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-right: auto;
+    }
+
+    /* ── Bulk select ── */
+    .bulk-bar {
+      padding: 0.55rem 1.4rem;
+      background: #eff6ff;
+      border-bottom: 1px solid #bfdbfe;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      animation: fadeIn 0.18s ease;
+    }
+    .bulk-bar .bulk-label { font-size: 0.78rem; font-weight: 600; color: var(--accent); }
+    .bulk-check-all { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.78rem; color: var(--text2); font-weight: 500; }
+    .bulk-check-all input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color: var(--accent); }
+    .row-cb { width:15px; height:15px; cursor:pointer; accent-color: var(--accent); }
+    .btn-bulk-move {
+      padding: 0.35rem 1rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      transition: all 0.15s;
+    }
+    .btn-bulk-move:hover { background: #1e40af; box-shadow: 0 3px 10px rgba(29,78,216,0.3); }
+    .btn-bulk-move:disabled { background: var(--muted); cursor: not-allowed; box-shadow: none; }
+    .btn-cancel-bulk {
+      padding: 0.35rem 0.8rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid #bfdbfe;
+      color: var(--accent);
+      transition: all 0.15s;
+    }
+    .btn-cancel-bulk:hover { background: #fff; }
+    .btn-bulk-select {
+      padding: 0.35rem 0.9rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: var(--accent);
+      transition: all 0.15s;
+    }
+    .btn-bulk-select:hover { background: var(--accent); color: #fff; }
+    .bulk-count { font-size: 0.75rem; color: var(--muted); margin-left: auto; }
+    .btn-bulk-back {
+      padding: 0.35rem 1rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.8rem;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      background: #dc2626;
+      color: #fff;
+      transition: all 0.15s;
+    }
+    .btn-bulk-back:hover { background: #b91c1c; box-shadow: 0 3px 10px rgba(220,38,38,0.3); }
+    .btn-bulk-back:disabled { background: var(--muted); cursor: not-allowed; box-shadow: none; }
+    .btn-bulk-select2 {
+      padding: 0.35rem 0.9rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.78rem;
+      border-radius: 7px;
+      border: 1.5px solid #fca5a5;
+      cursor: pointer;
+      background: #fef2f2;
+      color: #dc2626;
+      transition: all 0.15s;
+    }
+    .btn-bulk-select2:hover { background: #dc2626; color: #fff; }
+    .bulk-bar2 {
+      padding: 0.55rem 1.4rem;
+      background: #fff5f5;
+      border-bottom: 1px solid #fecaca;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      flex-wrap: wrap;
+      animation: fadeIn 0.18s ease;
+    }
+    .bulk-bar2 .bulk-label { font-size: 0.78rem; font-weight: 600; color: #dc2626; }
+
+    /* ── Toast / In-page notification ── */
+    #toastContainer {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      pointer-events: none;
+      max-width: 420px;
+      width: calc(100% - 2.4rem);
+    }
+    .toast {
+      pointer-events: all;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem 0.85rem 1.1rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      animation: toastIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .toast.hiding { animation: toastOut 0.22s ease forwards; }
+    @keyframes toastIn  { from { opacity:0; transform: translateX(60px) scale(0.95); } to { opacity:1; transform: translateX(0) scale(1); } }
+    @keyframes toastOut { from { opacity:1; transform: translateX(0) scale(1); } to { opacity:0; transform: translateX(60px) scale(0.95); } }
+    .toast-success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+    .toast-error   { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+    .toast-warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .toast-info    { background: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
+    .toast-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .toast-body { flex: 1; }
+    .toast-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.15rem; }
+    .toast-msg  { font-weight: 400; }
+    .toast-msg ul { margin: 0.3rem 0 0 0; padding-left: 1.1rem; }
+    .toast-msg li { margin-bottom: 0.15rem; }
+    .toast-close {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: inherit;
+      opacity: 0.5;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0;
+      margin-top: 1px;
+      transition: opacity 0.15s;
+    }
+    .toast-close:hover { opacity: 1; }
+    .toast-progress {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 3px;
+      border-radius: 0 0 12px 12px;
+      animation: toastProg linear forwards;
+    }
+    .toast-success .toast-progress { background: #16a34a; }
+    .toast-error   .toast-progress { background: #ea580c; }
+    .toast-warning .toast-progress { background: #d97706; }
+    .toast-info    .toast-progress { background: #2563eb; }
+    @keyframes toastProg { from { width:100%; } to { width:0%; } }
+    .toast { position: relative; overflow: hidden; }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      padding: 0.65rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfd;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .filter-select {
+      background: #fff;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      padding: 0.28rem 0.65rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.78rem;
+      border-radius: 20px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.16s, box-shadow 0.16s;
+      appearance: none;
+      padding-right: 1.4rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+    }
+
+    .filter-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(29,78,216,0.1);
+      color: var(--text);
+    }
+
+    .filter-select.active-filter {
+      border-color: var(--accent);
+      background-color: #eff6ff;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .filter-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--border2);
+      margin: 0 0.1rem;
+    }
+
+    .btn-clear-filter {
+      padding: 0.25rem 0.75rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .btn-clear-filter:hover {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: var(--red);
+    }
+
+    .filter-result-count {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .filter-result-count strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── Expand toggle button ── */
+    .btn-expand {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      border: 1px solid var(--border2);
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 0.65rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      line-height: 1;
+      padding: 0;
+    }
+    .btn-expand:hover { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+    .btn-expand.open  { border-color: var(--accent); color: var(--accent); background: #eff6ff; transform: rotate(90deg); }
+
+    /* ── Expand detail row ── */
+    .detail-row td { padding: 0 !important; border-bottom: 2px solid #bfdbfe !important; }
+    .detail-panel {
+      background: linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%);
+      border-top: 1px solid #dbeafe;
+      padding: 1rem 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.85rem 1.5rem;
+      animation: slideDown 0.2s ease;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .detail-item { display: flex; flex-direction: column; gap: 0.2rem; }
+    .detail-item-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .detail-item-value {
+      font-size: 0.83rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .detail-section-title {
+      grid-column: 1 / -1;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #dbeafe;
+      margin-bottom: 0.1rem;
+    }
+
+    /* จัดการ column (ย้าย + ระงับ) */
+    .action-group { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; }
+
+    /* ── History tab ── */
+    .hist-list { padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .hist-entry {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: box-shadow 0.15s;
+    }
+    .hist-entry:hover { box-shadow: var(--shadow-md); }
+
+    .hist-head {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      cursor: pointer;
+      user-select: none;
+      flex-wrap: wrap;
+    }
+    .hist-head:hover { background: #f1f5f9; }
+
+    .hist-toggle {
+      font-size: 0.65rem;
+      color: var(--muted);
+      transition: transform 0.18s;
+      display: inline-block;
+    }
+    .hist-toggle.open { transform: rotate(90deg); color: var(--accent); }
+
+    .hist-date {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .hist-time {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-feature-settings: "tnum";
+    }
+    .hist-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--accent);
+      padding: 0.15rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+    .hist-total {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--green);
+      font-feature-settings: "tnum";
+      margin-left: auto;
+    }
+    .hist-del {
+      padding: 0.22rem 0.55rem;
+      font-size: 0.72rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 5px;
+      transition: all 0.15s;
+    }
+    .hist-del:hover { background: #fef2f2; border-color: #fecaca; color: var(--red); }
+
+    .hist-body { overflow-x: auto; }
+    .hist-body table { font-size: 0.78rem; }
+    .hist-body th { font-size: 0.68rem; background: #f0f7ff; }
+    .hist-body td { padding: 0.5rem 0.8rem; }
+
+    .hist-empty {
+      text-align: center;
+      padding: 3.5rem 2rem;
+      color: var(--muted);
+    }
+    .hist-empty .ei { font-size: 2.5rem; opacity: 0.35; margin-bottom: 0.6rem; }
+    .hist-empty p  { font-size: 0.85rem; font-weight: 300; }
+
+    /* Save history button */
+    .btn-save-hist {
+      padding: 0.35rem 0.9rem;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.16s;
+      border: 1px solid #bbf7d0;
+      background: #f0fdf4;
+      color: var(--green);
+    }
+    .btn-save-hist:hover { background: var(--green); color: #fff; box-shadow: 0 3px 10px rgba(22,163,74,0.3); }
+
+    @media (max-width: 640px) {
+      main { padding: 1rem; }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
-<div class="topbar">
-  <img src="sunjupiter-logo.png" alt="Sun Jupiter Logo">
-  <div>
-    <div class="company-name">Sun Jupiter Corporation</div>
-    <div class="company-sub">ระบบสร้างรายงานการทางพิเศษ</div>
-  </div>
-</div>
-<div class="card">
-  <div class="header">
-    <h1>การทางพิเศษ</h1>
-  </div>
-  <p class="subtitle">สร้างรายงาน Excel จากข้อมูล CSV และใบกำกับ PDF</p>
 
-  <div class="upload-group">
-    <div class="section-label">
-      ไฟล์ข้อมูลการผ่านทาง (CSV)
-      <span class="required">* จำเป็น</span>
-      <span class="badge" id="csvCount">0 ไฟล์</span>
-    </div>
-    <div class="dropzone" id="csvZone">
-      <input type="file" id="csvInput" accept=".csv" multiple>
-      <div class="dz-icon">📄</div>
-      <p class="dz-text">ลากไฟล์มาวางที่นี่ หรือ <strong>คลิกเพื่อเลือกไฟล์</strong></p>
-      <p class="dz-text" style="margin-top:3px;font-size:.74rem;color:#9ca3af;">เลือกได้หลายไฟล์พร้อมกัน</p>
-    </div>
-    <ul class="file-list" id="csvList"></ul>
+<div id="toastContainer"></div>
+
+<header>
+  <div class="logo">
+    <img class="logo-img" src="sunjupiter-logo.png" alt="Sun Jupiter Logo">
   </div>
-
-  <div class="divider"></div>
-
-  <div class="upload-group">
-    <div class="section-label">
-      ใบกำกับภาษี (PDF)
-      <span class="badge" id="pdfCount">0 ไฟล์</span>
-    </div>
-    <div class="dropzone" id="pdfZone">
-      <input type="file" id="pdfInput" accept=".pdf" multiple>
-      <div class="dz-icon">📋</div>
-      <p class="dz-text">ลากไฟล์มาวางที่นี่ หรือ <strong>คลิกเพื่อเลือกไฟล์</strong></p>
-      <p class="dz-text" style="margin-top:3px;font-size:.74rem;color:#9ca3af;">ใช้เปรียบเทียบรายการนอกการทาง (ไม่บังคับ)</p>
-    </div>
-    <ul class="file-list" id="pdfList"></ul>
+  <div class="header-text">
+    <h1>ระบบคิดเงินเดือนคนขับเครน</h1>
+    <p>Crane Operator Payroll System</p>
   </div>
-
-  <button class="btn" id="processBtn" onclick="run()" disabled>
-    ประมวลผลและดาวน์โหลด Excel
+  <div class="header-date">
+    <span class="hd-date" id="dateBadge">—</span>
+    <span class="hd-time" id="timeBadge">00:00:00</span>
+  </div>
+  <button onclick="if(confirm('โหลดข้อมูลทดสอบ 10 คน?\n\n⚠️ ข้อมูลปัจจุบันจะถูกแทนที่ทั้งหมด'))seedDemoData()"
+    style="padding:0.3rem 0.85rem;font-family:'Kanit',sans-serif;font-size:0.72rem;font-weight:500;border-radius:6px;cursor:pointer;background:#f1f5f9;border:1px solid var(--border2);color:var(--muted);transition:all 0.15s"
+    onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+    🧪 ข้อมูลทดสอบ
   </button>
-  <div class="status" id="status"></div>
-  <p class="footer">ไม่ต้องติดตั้งอะไร · ประมวลผลในเบราว์เซอร์ทั้งหมด</p>
+</header>
+
+<!-- ── Confirm Delete Modal ── -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">ยืนยันการลบ</div>
+    <div class="confirm-msg" id="confirmMsg">คุณแน่ใจหรือไม่?</div>
+    <div class="confirm-actions">
+      <button class="btn-cancel-modal" onclick="closeConfirm()">ยกเลิก</button>
+      <button class="btn-confirm-del" id="confirmOkBtn" onclick="execConfirm()">ลบเลย</button>
+    </div>
+  </div>
 </div>
+
+<main>
+
+  <!-- ── FORM ── -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">
+        <span class="dot dot-blue"></span>เพิ่มข้อมูลคนขับ
+      </span>
+    </div>
+    <div class="form-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ชื่อ</label>
+          <input type="text" id="fName" placeholder="ชื่อจริง">
+        </div>
+        <div class="form-group">
+          <label>นามสกุล</label>
+          <input type="text" id="lName" placeholder="นามสกุล">
+        </div>
+        <div class="form-group">
+          <label>เลขบัญชี</label>
+          <input type="text" id="accNo" placeholder="XXX-X-XXXXX-X" maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>ธนาคาร</label>
+          <select id="bank">
+            <option value="">— เลือกธนาคาร —</option>
+            <option value="BBL">ธนาคารกรุงเทพ (BBL)</option>
+            <option value="KBank">ธนาคารกสิกรไทย (KBank)</option>
+            <option value="KTB">ธนาคารกรุงไทย (KTB)</option>
+            <option value="SCB">ธนาคารไทยพาณิชย์ (SCB)</option>
+            <option value="BAY">ธนาคารกรุงศรีอยุธยา (BAY)</option>
+            <option value="ttb">ธนาคารทหารไทยธนชาต (ttb)</option>
+            <option value="UOB">ธนาคารยูโอบี (UOB)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>บริษัท</label>
+          <select id="dept">
+            <option value="">— เลือกบริษัท —</option>
+            <option value="บริษัท ซัน จูปิเตอร์ จำกัด">บริษัท ซัน จูปิเตอร์ จำกัด</option>
+            <option value="ควอลิตี้ แมชชีน">ควอลิตี้ แมชชีน</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>หน้าที่</label>
+          <select id="tc">
+            <option value="">— เลือกหน้าที่ —</option>
+            <option value="คนขับเครน">คนขับเครน</option>
+            <option value="คนบอกเครน">คนบอกเครน</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ประเภทเรท</label>
+          <select id="rateType">
+            <option value="">— เลือกประเภท —</option>
+            <option value="รายวัน">รายวัน (฿/วัน)</option>
+            <option value="รายเดือน">รายเดือน (฿/เดือน)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>เรทราคา (฿)</label>
+          <input type="number" id="rate" placeholder="0" min="0" step="1">
+        </div>
+        <div class="form-group">
+          <label>เรท OT (฿/ชั่วโมง)</label>
+          <input type="number" id="otRate" placeholder="0.00" min="0" step="0.5">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="addEmployee()">＋ เพิ่มเข้ารายการ</button>
+    </div>
+  </div>
+
+  <!-- ── TABBED TABLE CARD ── -->
+  <div class="card">
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabBtn1" onclick="switchTab(1)">
+        👤 รายการคนขับทั้งหมด
+        <span class="tab-badge" id="t1Count">0 คน</span>
+      </button>
+      <button class="tab-btn green-tab" id="tabBtn2" onclick="switchTab(2)">
+        📋 คนขับที่ใช้ในงาน
+        <span class="tab-badge" id="t2Count">0 คน</span>
+      </button>
+      <button class="tab-btn purple-tab" id="tabBtn3" onclick="switchTab(3)">
+        📜 ประวัติการคิดเงิน
+        <span class="tab-badge" id="t3Count">0 รายการ</span>
+      </button>
+    </div>
+
+    <!-- ── PANEL 1 ── -->
+    <div class="tab-panel active" id="panel1">
+      <div class="tab-toolbar">
+        <span class="section-label" id="t1ToolLabel">กดปุ่ม "+ เพิ่มเข้างาน" เพื่อย้ายไปตารางงาน</span>
+        <button class="btn-bulk-select" id="btnBulkMode" onclick="toggleBulkMode()">☑ เลือกย้ายหลายคน</button>
+        <button class="btn-sm btn-ghost" onclick="exportCSV(1)">↓ Export</button>
+      </div>
+      <div class="bulk-bar" id="bulkBar" style="display:none">
+        <span class="bulk-label">⬜ โหมดเลือกย้าย</span>
+        <label class="bulk-check-all">
+          <input type="checkbox" id="checkAll" onchange="toggleCheckAll(this.checked)"> เลือกทั้งหมด
+        </label>
+        <button class="btn-bulk-move" id="btnDoMove" onclick="bulkMoveSelected()" disabled>
+          → ย้ายที่เลือกเข้างาน (<span id="selCount">0</span> คน)
+        </button>
+        <button class="btn-cancel-bulk" onclick="toggleBulkMode()">✕ ยกเลิก</button>
+        <span class="bulk-count" id="bulkAvailCount"></span>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">🔍 ฟิลเตอร์</span>
+        <div class="filter-divider"></div>
+        <select class="filter-select" id="f1Dept" onchange="applyF1()">
+          <option value="">บริษัท: ทั้งหมด</option>
+          <option value="บริษัท ซัน จูปิเตอร์ จำกัด">บริษัท ซัน จูปิเตอร์ จำกัด</option>
+          <option value="ควอลิตี้ แมชชีน">ควอลิตี้ แมชชีน</option>
+        </select>
+        <select class="filter-select" id="f1Tc" onchange="applyF1()">
+          <option value="">หน้าที่: ทั้งหมด</option>
+          <option value="คนขับเครน">คนขับเครน</option>
+          <option value="คนบอกเครน">คนบอกเครน</option>
+        </select>
+        <select class="filter-select" id="f1Period" onchange="applyF1()">
+          <option value="">งวด: ทั้งหมด</option>
+          <option value="รอบ 15">รอบ 15</option>
+          <option value="รอบ 30">รอบ 30</option>
+        </select>
+        <select class="filter-select" id="f1Status" onchange="applyF1()">
+          <option value="">สถานะ: ทั้งหมด</option>
+          <option value="active">ปกติ</option>
+          <option value="injob">อยู่ในงาน</option>
+          <option value="suspended">ระงับ</option>
+        </select>
+        <select class="filter-select" id="f1RateType" onchange="applyF1()">
+          <option value="">ประเภทเรท: ทั้งหมด</option>
+          <option value="รายวัน">รายวัน</option>
+          <option value="รายเดือน">รายเดือน</option>
+        </select>
+        <button class="btn-clear-filter" onclick="clearF1()">✕ ล้างฟิลเตอร์</button>
+        <span class="filter-result-count" id="f1Result"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="center">#</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>เลขบัญชี</th>
+              <th>ธนาคาร</th>
+              <th>บริษัท</th>
+              <th>หน้าที่</th>
+              <th>เรทราคา</th>
+              <th>สถานะ</th>
+              <th class="center">เพิ่มเข้างาน</th>
+              <th class="center">ระงับ</th>
+              <th class="center">ลบ</th>
+            </tr>
+          </thead>
+          <tbody id="t1Body">
+            <tr>
+              <td colspan="11">
+                <div class="empty">
+                  <div class="ei">👤</div>
+                  <p>ยังไม่มีรายชื่อ — กรอกข้อมูลด้านบนแล้วกด "เพิ่มเข้ารายการ"</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PANEL 2 ── -->
+    <div class="tab-panel" id="panel2">
+      <div class="tab-toolbar">
+        <span class="section-label">กรอกข้อมูลงานในแต่ละแถว แล้วกด "คิดเงินเดือนรวม"</span>
+        <button class="btn-bulk-select2" id="btnBulkMode2" onclick="toggleBulkMode2()">☑ เลือกย้ายกลับ</button>
+        <button class="btn-sm btn-orange-fill" onclick="calcAll()">⚡ คิดทั้งหมด</button>
+        <button class="btn-save-hist" onclick="saveHistory()">💾 บันทึกประวัติ</button>
+        <button class="btn-sm btn-ghost" onclick="exportCSV(2)">↓ Export</button>
+        <button class="btn-sm btn-ghost" onclick="window.print()">🖨 พิมพ์</button>
+      </div>
+      <div class="bulk-bar2" id="bulkBar2" style="display:none">
+        <span class="bulk-label">↩ โหมดเลือกย้ายกลับ</span>
+        <label class="bulk-check-all">
+          <input type="checkbox" id="checkAll2" onchange="toggleCheckAll2(this.checked)"> เลือกทั้งหมด
+        </label>
+        <button class="btn-bulk-back" id="btnDoBack" onclick="bulkMoveBack()" disabled>
+          ← ย้ายกลับรายการ (<span id="selCount2">0</span> คน)
+        </button>
+        <button class="btn-cancel-bulk" onclick="toggleBulkMode2()">✕ ยกเลิก</button>
+        <span class="bulk-count" id="bulkBackCount"></span>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">🔍 ฟิลเตอร์</span>
+        <div class="filter-divider"></div>
+        <select class="filter-select" id="f2Dept" onchange="applyF2()">
+          <option value="">บริษัท: ทั้งหมด</option>
+          <option value="บริษัท ซัน จูปิเตอร์ จำกัด">บริษัท ซัน จูปิเตอร์ จำกัด</option>
+          <option value="ควอลิตี้ แมชชีน">ควอลิตี้ แมชชีน</option>
+        </select>
+        <select class="filter-select" id="f2Tc" onchange="applyF2()">
+          <option value="">หน้าที่: ทั้งหมด</option>
+          <option value="คนขับเครน">คนขับเครน</option>
+          <option value="คนบอกเครน">คนบอกเครน</option>
+        </select>
+        <select class="filter-select" id="f2Period" onchange="applyF2()">
+          <option value="">งวด: ทั้งหมด</option>
+          <option value="รอบ 15">รอบ 15</option>
+          <option value="รอบ 30">รอบ 30</option>
+        </select>
+        <select class="filter-select" id="f2RateType" onchange="applyF2()">
+          <option value="">ประเภทเรท: ทั้งหมด</option>
+          <option value="รายวัน">รายวัน</option>
+          <option value="รายเดือน">รายเดือน</option>
+        </select>
+        <select class="filter-select" id="f2Calc" onchange="applyF2()">
+          <option value="">สถานะคำนวณ: ทั้งหมด</option>
+          <option value="done">คำนวณแล้ว</option>
+          <option value="pending">ยังไม่คำนวณ</option>
+        </select>
+        <button class="btn-clear-filter" onclick="clearF2()">✕ ล้างฟิลเตอร์</button>
+        <span class="filter-result-count" id="f2Result"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="center" style="width:50px"></th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>บริษัท / หน้าที่</th>
+              <th>งวด</th>
+              <th>เงินที่เบิกไป (≤฿3,500)</th>
+              <th>จำนวนวัน</th>
+              <th>จำนวน OT (ชม.)</th>
+              <th>TC</th>
+              <th>หน่วยงาน</th>
+              <th>ยอดก่อนภาษี</th>
+              <th class="center">คิดเงินเดือนรวม</th>
+            </tr>
+          </thead>
+          <tbody id="t2Body">
+            <tr>
+              <td colspan="11">
+                <div class="empty">
+                  <div class="ei">📋</div>
+                  <p>ยังไม่มีรายการ — กดปุ่ม "+ เพิ่มเข้างาน" ในแท็บรายการคนขับ</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-foot">
+        <div class="sum-item">
+          <span class="sum-label">พนักงานในงาน</span>
+          <span class="sum-value" id="sumEmp">0 คน</span>
+        </div>
+        <div class="sum-item">
+          <span class="sum-label">รายได้พื้นฐานรวม</span>
+          <span class="sum-value" id="sumBase">฿0.00</span>
+        </div>
+        <div class="sum-item">
+          <span class="sum-label">OT รวม</span>
+          <span class="sum-value" id="sumOT">฿0.00</span>
+        </div>
+        <div class="sum-item">
+          <span class="sum-label">เงินเบิกรวม</span>
+          <span class="sum-value" style="color:var(--red)" id="sumAdvance">฿0.00</span>
+        </div>
+        <div class="sum-item">
+          <span class="sum-label">ยอดก่อนภาษี</span>
+          <span class="sum-value highlight" id="sumTotal">฿0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANEL 3 — ประวัติการคิดเงิน ── -->
+    <div class="tab-panel" id="panel3">
+      <div class="tab-toolbar">
+        <span class="section-label">กดที่รายการเพื่อดูรายละเอียด — ประวัติจะถูกบันทึกเมื่อกด "💾 บันทึกประวัติ"</span>
+        <button class="btn-sm btn-ghost" onclick="exportHistoryCSV()">↓ Export ประวัติ</button>
+      </div>
+      <div id="histList" class="hist-list">
+        <div class="hist-empty">
+          <div class="ei">📜</div>
+          <p>ยังไม่มีประวัติ — กด "💾 บันทึกประวัติ" ในแท็บคนขับที่ใช้งาน</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
 
 <script>
-// ─── Setup pdf.js worker ───────────────────────────────────────────────────
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const $ = id => document.getElementById(id);
+  const fmt = n => '฿' + (+n).toLocaleString('th-TH', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
-// ─── Constants ─────────────────────────────────────────────────────────────
-const THAI_MONTHS = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน',
-  'พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม',
-  'กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-
-const NUM_FMT  = '#,##0.00';
-const COL_GRAY   = 'D9D9D9';
-const COL_LGRAY  = 'F2F2F2';
-const COL_RED    = 'FFCCCC';
-const COL_YELLOW = 'FFFF99';
-
-// ─── File state ────────────────────────────────────────────────────────────
-const state = { csv: null, pdf: null };
-
-function setupZone(zoneId, inputId, listId, countId, type) {
-  const zone  = document.getElementById(zoneId);
-  const input = document.getElementById(inputId);
-  input.addEventListener('change', () => { state[type] = input.files; renderList(input.files, listId, countId); updateBtn(); });
-  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('over');
-    const ext = type === 'csv' ? '.csv' : '.pdf';
-    const dt = new DataTransfer();
-    for (const f of e.dataTransfer.files) if (f.name.toLowerCase().endsWith(ext)) dt.items.add(f);
-    input.files = dt.files; state[type] = dt.files;
-    renderList(dt.files, listId, countId); updateBtn();
-  });
-}
-function renderList(files, listId, countId) {
-  document.getElementById(countId).textContent = `${files.length} ไฟล์`;
-  const ul = document.getElementById(listId);
-  ul.innerHTML = '';
-  for (const f of files) { const li = document.createElement('li'); li.textContent = f.name; ul.appendChild(li); }
-}
-function updateBtn() { document.getElementById('processBtn').disabled = !(state.csv && state.csv.length > 0); }
-setupZone('csvZone','csvInput','csvList','csvCount','csv');
-setupZone('pdfZone','pdfInput','pdfList','pdfCount','pdf');
-
-// ─── CSV parser ────────────────────────────────────────────────────────────
-function readFileText(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = e => res(e.target.result);
-    r.onerror = rej;
-    r.readAsText(file, 'UTF-8');
-  });
-}
-function readFileBuffer(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = e => res(e.target.result);
-    r.onerror = rej;
-    r.readAsArrayBuffer(file);
-  });
-}
-
-function parseCSVLine(line) {
-  const out = []; let cur = '', inQ = false;
-  for (const ch of line) {
-    if (ch === '"') { inQ = !inQ; }
-    else if (ch === ',' && !inQ) { out.push(cur); cur = ''; }
-    else cur += ch;
+  // ── Date helpers — ใช้ปี พ.ศ. แบบ consistent ──
+  const TH_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const TH_MONTHS_LONG  = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  function fmtDate(d, long = false) {
+    const day  = d.getDate();
+    const mon  = long ? TH_MONTHS_LONG[d.getMonth()] : TH_MONTHS_SHORT[d.getMonth()];
+    const year = d.getFullYear() + 543; // พ.ศ.
+    return `${day} ${mon} ${year}`;
   }
-  out.push(cur); return out;
-}
-
-function parseCSV(text) {
-  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-  const lines = text.replace(/\r/g,'').split('\n').filter(l => l.trim());
-  const out = [];
-  for (const line of lines.slice(1)) {
-    const row = parseCSVLine(line);
-    if (row.length < 17) continue;
-    const taxId      = (row[5]||'').trim().replace(/^'/,'');
-    const inv        = (row[7]||'').trim().replace(/^'/,'');
-    const dateStr    = (row[8]||'').trim();
-    const plate      = (row[9]||'').trim();
-    const location   = (row[13]||'').trim();
-    const beforeTax  = parseFloat((row[14]||'0').replace(',','')) || 0;
-    const tax        = parseFloat((row[15]||'0').replace(',','')) || 0;
-    const total      = parseFloat((row[16]||'0').replace(',','')) || 0;
-    let dt = null;
-    try { dt = new Date(dateStr); if (isNaN(dt)) dt = null; } catch {}
-    if (!plate) continue;
-    out.push({ taxId, inv, dateStr, dt, plate, location, beforeTax, tax, total });
-  }
-  return out;
-}
-
-// ─── PDF parser ────────────────────────────────────────────────────────────
-function normPlate(p) { return (p||'').replace(/\s+/g,''); }
-
-function beToCe(y) { return y > 2400 ? y - 543 : y; }
-
-function normDateKey(s) {
-  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (m) {
-    const [,d,mo,y] = m;
-    return `${beToCe(+y)}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
-  }
-  return s;
-}
-
-async function parsePDF(file) {
-  const buf  = await readFileBuffer(file);
-  const pdf  = await pdfjsLib.getDocument({ data: buf }).promise;
-  let plate  = null;
-  const items = [];
-
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const page    = await pdf.getPage(p);
-    const content = await page.getTextContent();
-
-    // group text items by y-position (same row = within 4pt)
-    const byY = {};
-    for (const item of content.items) {
-      const y = Math.round(item.transform[5] / 4) * 4;
-      (byY[y] = byY[y] || []).push(item.str.trim());
-    }
-    const rowLines = Object.values(byY).map(parts => parts.join(' ').trim()).filter(Boolean);
-
-    for (const line of rowLines) {
-      // find plate
-      if (!plate && /ทะเบียน/.test(line)) {
-        const m = line.match(/([ก-ฮ]{1,3}[ก-ฮ]?\s*\d{3,4})/);
-        if (m) plate = m[1].trim();
-      }
-      // find toll row: must contain date pattern + trailing numbers
-      const dm = line.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/);
-      if (!dm) continue;
-      const rawDate = dm[1];
-      const dateKey = normDateKey(rawDate);
-      // pull all numbers from line
-      const nums = [...line.matchAll(/([\d,]+\.\d{2})/g)].map(m => parseFloat(m[1].replace(',','')));
-      if (!nums.length) continue;
-      const total      = nums[nums.length - 1];
-      const tax        = nums.length > 1 ? nums[nums.length - 2] : +(total * 7/107).toFixed(2);
-      const beforeTax  = nums.length > 2 ? nums[nums.length - 3] : +(total - tax).toFixed(2);
-      // location = text chunk that isn't a date or pure number
-      const locationMatch = line.replace(/[\d\/\-,\.]+/g,' ').replace(/\s+/g,' ').trim();
-      const location = locationMatch.length > 2 ? locationMatch.split(/\s{2,}/)[0].trim() : '';
-      items.push({ dateKey, dateStr: rawDate, location, beforeTax, tax, total });
-    }
-  }
-  return { plate, items };
-}
-
-// ─── Excel styles ──────────────────────────────────────────────────────────
-function thinBorder() {
-  const s = { style: 'thin', color: { rgb: '000000' } };
-  return { top: s, bottom: s, left: s, right: s };
-}
-function medBorder() {
-  const s = { style: 'medium', color: { rgb: '000000' } };
-  return { top: s, bottom: s, left: s, right: s };
-}
-function fill(hex) { return { patternType: 'solid', fgColor: { rgb: hex } }; }
-
-// ─── Sheet builder ─────────────────────────────────────────────────────────
-function buildSheet(plate, records, pdfExtras, taxId) {
-  const ws = {};
-  const merges = [];
-  const rowHeights = [];
-  const colWidths = [8,13,14,24,22,14,11,14].map(w => ({ wch: w }));
-
-  let maxR = 0, maxC = 7;
-
-  function sc(r, c, val, opts = {}) {
-    const ref = XLSX.utils.encode_cell({ r: r - 1, c: c - 1 });
-    if (r - 1 > maxR) maxR = r - 1;
-
-    let cell;
-    const isFormula = typeof val === 'string' && val.startsWith('=');
-    if (isFormula)             cell = { t: 'n', f: val.slice(1) };
-    else if (typeof val === 'number') cell = { t: 'n', v: val };
-    else                       cell = { t: 's', v: val == null ? '' : String(val) };
-
-    cell.s = {
-      font: { name: 'Kanit', sz: opts.sz || 10, bold: !!opts.bold,
-              color: { rgb: opts.color || '000000' } },
-      alignment: { horizontal: opts.align || 'center', vertical: 'center' },
-      border: opts.border === false ? undefined : (opts.medium ? medBorder() : thinBorder()),
-    };
-    if (opts.fill)   cell.s.fill = fill(opts.fill);
-    if (opts.numFmt) cell.s.numFmt = opts.numFmt;
-
-    ws[ref] = cell;
+  function fmtTime(d) {
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
   }
 
-  function merge(r1, c1, r2, c2) {
-    merges.push({ s: { r: r1-1, c: c1-1 }, e: { r: r2-1, c: c2-1 } });
-  }
+  // ── In-page toast notification ──
+  function showToast(message, type = 'info', duration = 4000) {
+    const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+    const titles = { success:'สำเร็จ', error:'เกิดข้อผิดพลาด', warning:'แจ้งเตือน', info:'ข้อมูล' };
+    const container = document.getElementById('toastContainer');
 
-  function fmtDt(dt) {
-    if (!dt) return '';
-    return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
-  }
-
-  records = [...records].sort((a, b) => (a.dt || 0) - (b.dt || 0));
-
-  // Row 1 — title
-  merge(1,1,1,8);
-  sc(1, 1, `ทะเบียน ${plate}`, { bold: true, sz: 13, border: false });
-  rowHeights[0] = { hpt: 22 };
-
-  // Row 2 — date range
-  const dates = records.map(r => r.dt).filter(Boolean);
-  const minDt = dates.length ? new Date(Math.min(...dates.map(d => d.getTime()))) : null;
-  const maxDt = dates.length ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
-  const dateRange = dates.length
-    ? `วันที่ ${fmtDt(minDt)} - ${fmtDt(maxDt)}   เลขประจำตัวผู้เสียภาษี ${taxId}`
-    : '';
-  merge(2,1,2,8);
-  sc(2, 1, dateRange, { sz: 10, border: false });
-  rowHeights[1] = { hpt: 16 };
-
-  // Row 3 — spacer
-  rowHeights[2] = { hpt: 6 };
-
-  // Row 4 — Table 1 headers
-  const H1 = ['ลำดับ','ว.ด.ป.','ทะเบียนรถ','INV.','รายการ','ก่อนภาษี','ภาษี','รวมภาษี'];
-  H1.forEach((h, i) => sc(4, i+1, h, { bold: true, fill: COL_GRAY, medium: true }));
-  rowHeights[3] = { hpt: 18 };
-
-  // Data rows
-  let r = 5;
-  const t1DataStart = r;
-  for (let i = 0; i < records.length; i++) {
-    const rec   = records[i];
-    const isEB  = rec.inv.toUpperCase().startsWith('EB');
-    const label = isEB ? 'ทางด่วนและรถไฟฟ้า' : 'การทางพิเศษฯ';
-    const color = isEB ? 'FF0000' : '000000';
-    const bg    = isEB ? COL_RED : undefined;
-
-    [i+1, fmtDt(rec.dt), rec.plate, rec.inv, label,
-     rec.beforeTax, rec.tax, rec.total].forEach((v, ci) => {
-      sc(r, ci+1, v, {
-        color, fill: bg,
-        align: ci >= 5 ? 'right' : ci === 4 ? 'left' : 'center',
-        numFmt: ci >= 5 ? NUM_FMT : undefined,
-      });
-    });
-    rowHeights[r-1] = { hpt: 15 };
-    r++;
-  }
-
-  // Table 1 total
-  const t1End   = r - 1;
-  const t1Total = r;
-  ['','','','','รวมทั้งหมด',
-   `=SUM(F${t1DataStart}:F${t1End})`,
-   `=SUM(G${t1DataStart}:G${t1End})`,
-   `=SUM(H${t1DataStart}:H${t1End})`].forEach((v, ci) => {
-    sc(t1Total, ci+1, v, { bold: true, fill: COL_LGRAY,
-      align: ci >= 4 ? 'right' : 'center',
-      numFmt: ci >= 5 ? NUM_FMT : undefined });
-  });
-  rowHeights[t1Total-1] = { hpt: 16 };
-  r++;
-
-  // Table 2 (PDF extras)
-  if (pdfExtras.length > 0) {
-    r += 3; // gap
-
-    const H2 = ['ลำดับ','ว.ด.ป.','ทะเบียนรถ','รายการ','ก่อนภาษี','ภาษี','รวมภาษี'];
-    H2.forEach((h, i) => sc(r, i+1, h, { bold: true, fill: COL_GRAY, medium: true }));
-    rowHeights[r-1] = { hpt: 18 };
-    r++;
-
-    const t2DataStart = r;
-    for (let i = 0; i < pdfExtras.length; i++) {
-      const it = pdfExtras[i];
-      [i+1, it.dateStr, plate, it.location,
-       it.beforeTax, it.tax, it.total].forEach((v, ci) => {
-        sc(r, ci+1, v, {
-          align: ci >= 4 ? 'right' : ci === 3 ? 'left' : 'center',
-          numFmt: ci >= 4 ? NUM_FMT : undefined,
-        });
-      });
-      rowHeights[r-1] = { hpt: 15 };
-      r++;
-    }
-
-    const t2End   = r - 1;
-    const t2Total = r;
-    ['','','','รวมทั้งหมด',
-     `=SUM(E${t2DataStart}:E${t2End})`,
-     `=SUM(F${t2DataStart}:F${t2End})`,
-     `=SUM(G${t2DataStart}:G${t2End})`].forEach((v, ci) => {
-      sc(t2Total, ci+1, v, { bold: true, fill: COL_LGRAY,
-        align: ci >= 3 ? 'right' : 'center',
-        numFmt: ci >= 4 ? NUM_FMT : undefined });
-    });
-    rowHeights[t2Total-1] = { hpt: 16 };
-    r += 2; // gap + grand
-
-    const grand = r;
-    ['','','','ยอดรวมทั้งสิ้น',
-     `=F${t1Total}+E${t2Total}`,
-     `=G${t1Total}+F${t2Total}`,
-     `=H${t1Total}+G${t2Total}`].forEach((v, ci) => {
-      sc(grand, ci+1, v, { bold: true, sz: 11, fill: COL_YELLOW,
-        align: ci >= 3 ? 'right' : 'center',
-        numFmt: ci >= 4 ? NUM_FMT : undefined });
-    });
-    rowHeights[grand-1] = { hpt: 20 };
-  }
-
-  ws['!ref']    = XLSX.utils.encode_range({ s: {r:0,c:0}, e: {r:maxR, c:maxC} });
-  ws['!merges'] = merges;
-  ws['!rows']   = rowHeights;
-  ws['!cols']   = colWidths;
-  ws['!freeze'] = { ySplit: 4 };
-
-  return ws;
-}
-
-// ─── Main ──────────────────────────────────────────────────────────────────
-function showStatus(msg, type) {
-  const el = document.getElementById('status');
-  el.className = 'status show ' + type;
-  if (type === 'loading') el.innerHTML = `<div class="spinner"></div><span>${msg}</span>`;
-  else el.textContent = msg;
-}
-
-async function run() {
-  const csvFiles = state.csv;
-  const pdfFiles = state.pdf;
-  if (!csvFiles || !csvFiles.length) return;
-
-  const btn = document.getElementById('processBtn');
-  btn.disabled = true;
-  showStatus('กำลังอ่านไฟล์ CSV...', 'loading');
-
-  try {
-    // ── Parse CSVs
-    const plateData = {};
-    for (const f of csvFiles) {
-      const text    = await readFileText(f);
-      const records = parseCSV(text);
-      if (!records.length) continue;
-      const plate  = records[0].plate;
-      const taxId  = records[0].taxId || '0994000165421';
-      const key    = normPlate(plate);
-      if (!plateData[key]) plateData[key] = { plate, taxId, records: [] };
-      plateData[key].records.push(...records);
-    }
-
-    if (!Object.keys(plateData).length) {
-      showStatus('ไม่พบข้อมูลในไฟล์ CSV', 'error'); return;
-    }
-
-    // ── Parse PDFs
-    showStatus('กำลังอ่านไฟล์ PDF...', 'loading');
-    const pdfByPlate = {};
-    if (pdfFiles) {
-      for (const f of pdfFiles) {
-        const { plate, items } = await parsePDF(f);
-        if (plate && items.length) {
-          const key = normPlate(plate);
-          (pdfByPlate[key] = pdfByPlate[key] || []).push(...items);
-        }
-      }
-    }
-
-    // ── Build workbook
-    showStatus('กำลังสร้าง Excel...', 'loading');
-    const wb = XLSX.utils.book_new();
-    let allDates = [];
-
-    for (const [key, pdata] of Object.entries(plateData)) {
-      const { plate, taxId, records } = pdata;
-      allDates.push(...records.map(r => r.dt).filter(Boolean));
-
-      // Match PDF vs CSV to find extras (Table 2)
-      const csvCounter = {};
-      for (const rec of records) {
-        if (!rec.dt) continue;
-        const dk = rec.dt.toISOString().slice(0,10);
-        const ck = `${dk}|${rec.total.toFixed(2)}`;
-        csvCounter[ck] = (csvCounter[ck] || 0) + 1;
-      }
-
-      const pdfExtras = [];
-      for (const item of (pdfByPlate[key] || [])) {
-        const ck = `${item.dateKey}|${item.total.toFixed(2)}`;
-        if (csvCounter[ck] > 0) { csvCounter[ck]--; }
-        else pdfExtras.push(item);
-      }
-
-      const sheetName = plate.replace(/[\\/*?:\[\]]/g, '').slice(0, 31);
-      const ws = buildSheet(plate, records, pdfExtras, taxId);
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    }
-
-    // ── Download
-    const latestDate   = allDates.length ? new Date(Math.max(...allDates.map(d => d.getTime()))) : null;
-    const thaiMonth    = latestDate ? THAI_MONTHS[latestDate.getMonth() + 1] : 'รวม';
-    const filename     = `รวม${thaiMonth}.xlsx`;
-
-    // ── Save As dialog (File System Access API)
-    if (window.showSaveFilePicker) {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: filename,
-          types: [{ description: 'Excel Workbook', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
-        });
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const writable = await handle.createWritable();
-        await writable.write(new Blob([wbout], { type: 'application/octet-stream' }));
-        await writable.close();
-        showStatus(`บันทึก ${handle.name} สำเร็จ ✓`, 'success');
-      } catch (e) {
-        if (e.name !== 'AbortError') throw e;
-        showStatus('ยกเลิกการบันทึก', 'error');
-      }
+    // Parse multi-line messages into list items
+    const lines = message.replace(/^[⚠️✅❌ℹ️]\s*/u, '').split('\n').filter(l => l.trim());
+    let bodyHtml;
+    if (lines.length <= 1) {
+      bodyHtml = `<div class="toast-msg">${lines[0] || message}</div>`;
     } else {
-      // fallback สำหรับเบราว์เซอร์เก่า
-      XLSX.writeFile(wb, filename);
-      showStatus(`ดาวน์โหลด ${filename} สำเร็จ ✓`, 'success');
+      // First line is header, rest are list items
+      const header = lines[0];
+      const items  = lines.slice(1).filter(l => l.trim());
+      bodyHtml = `<div class="toast-msg">${header}${items.length ? `<ul>${items.map(l=>`<li>${l.replace(/^[""]|[""]$/g,'').trim()}</li>`).join('')}</ul>` : ''}</div>`;
     }
 
-  } catch (err) {
-    showStatus('เกิดข้อผิดพลาด: ' + err.message, 'error');
-    console.error(err);
-  } finally {
-    btn.disabled = false;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <span class="toast-icon">${icons[type]}</span>
+      <div class="toast-body">
+        <div class="toast-title">${titles[type]}</div>
+        ${bodyHtml}
+      </div>
+      <button class="toast-close" onclick="dismissToast(this.parentElement)">✕</button>
+      <div class="toast-progress" style="animation-duration:${duration}ms"></div>`;
+    container.appendChild(toast);
+
+    const timer = setTimeout(() => dismissToast(toast), duration);
+    toast._timer = timer;
   }
-}
+
+  function dismissToast(toast) {
+    if (!toast || toast._dismissed) return;
+    toast._dismissed = true;
+    clearTimeout(toast._timer);
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 230);
+  }
+
+  // ── date ──
+  const today = new Date();
+  $('dateBadge').textContent = fmtDate(today, true);
+
+  // ── Real-time clock ──
+  function updateClock() {
+    const now = new Date();
+    const hh  = String(now.getHours()).padStart(2,'0');
+    const mm  = String(now.getMinutes()).padStart(2,'0');
+    const ss  = String(now.getSeconds()).padStart(2,'0');
+    $('timeBadge').textContent = `${hh}:${mm}:${ss}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Confirm modal ──
+  let _pendingAction = null;
+
+  function confirmDelete(name, actionFn) {
+    _pendingAction = actionFn;
+    $('confirmMsg').innerHTML = `ต้องการลบ <span class="confirm-name">"${name}"</span> ออกจากระบบหรือไม่?`;
+    $('confirmOverlay').classList.add('show');
+  }
+
+  function execConfirm() {
+    if (_pendingAction) { _pendingAction(); _pendingAction = null; }
+    closeConfirm();
+  }
+
+  function closeConfirm() {
+    $('confirmOverlay').classList.remove('show');
+    _pendingAction = null;
+  }
+
+  // Close on overlay click
+  $('confirmOverlay').addEventListener('click', e => {
+    if (e.target === $('confirmOverlay')) closeConfirm();
+  });
+
+  // ── localStorage persistence ──
+  const STORE_KEY = 'cranePayroll_v1';
+
+  function saveToStorage() {
+    try {
+      const data = {
+        employees,
+        jobList,
+        payHistory: payHistory.map(h => ({
+          ...h,
+          timestamp: h.timestamp instanceof Date ? h.timestamp.toISOString() : h.timestamp
+        })),
+        uid
+      };
+      localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    } catch(e) { console.warn('saveToStorage error', e); }
+  }
+
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      employees  = data.employees  || [];
+      jobList    = data.jobList    || [];
+      uid        = data.uid        || 1;
+      payHistory = (data.payHistory || []).map(h => ({
+        ...h,
+        timestamp: new Date(h.timestamp)
+      }));
+    } catch(e) { console.warn('loadFromStorage error', e); }
+  }
+
+  // ── state ──
+  let employees  = [];
+  let jobList    = [];
+  let payHistory = [];
+  let uid = 1;
+
+  // โหลดข้อมูลจาก localStorage ทันทีที่เปิดหน้า
+  loadFromStorage();
+  // (render จะถูกเรียกหลัง script block นี้ผ่าน initRender())
+
+  // ── history expanded set (snapshot level) ──
+  const expandedHist = new Set();
+  // ── history row expanded set (per-job inside a snapshot) key = "hid_jid" ──
+  const expandedHistJobs = new Set();
+
+  function toggleHistJob(hid, jid) {
+    const key = `${hid}_${jid}`;
+    if (expandedHistJobs.has(key)) expandedHistJobs.delete(key);
+    else expandedHistJobs.add(key);
+    renderHistory();
+  }
+
+  // ── bulk move state (Tab1 → Tab2) ──
+  let bulkMode = false;
+  const selectedEmps = new Set();
+
+  // ── bulk move back state (Tab2 → Tab1) ──
+  let bulkMode2 = false;
+  const selectedJobs = new Set();
+
+  function toggleBulkMode() {
+    bulkMode = !bulkMode;
+    selectedEmps.clear();
+    $('bulkBar').style.display = bulkMode ? 'flex' : 'none';
+    $('btnBulkMode').textContent = bulkMode ? '✕ ยกเลิกโหมดเลือก' : '☑ เลือกย้ายหลายคน';
+    $('btnBulkMode').style.background = bulkMode ? '#fef2f2' : '';
+    $('btnBulkMode').style.borderColor = bulkMode ? '#fecaca' : '';
+    $('btnBulkMode').style.color = bulkMode ? 'var(--red)' : '';
+    updateBulkCount();
+    renderT1();
+  }
+
+  function updateBulkCount() {
+    const avail = employees.filter(e => !e.inJob && !e.suspended).length;
+    $('selCount').textContent = selectedEmps.size;
+    $('btnDoMove').disabled = selectedEmps.size === 0;
+    $('bulkAvailCount').textContent = `(พนักงานที่เลือกได้ ${avail} คน)`;
+    const ca = $('checkAll');
+    if (ca) ca.checked = selectedEmps.size > 0 && selectedEmps.size === avail;
+  }
+
+  function toggleCheckAll(checked) {
+    const list = filterEmployees().filter(e => !e.inJob && !e.suspended);
+    list.forEach(e => checked ? selectedEmps.add(e.id) : selectedEmps.delete(e.id));
+    updateBulkCount();
+    renderT1();
+  }
+
+  function toggleEmpCheck(empId, checked) {
+    checked ? selectedEmps.add(empId) : selectedEmps.delete(empId);
+    updateBulkCount();
+  }
+
+  // ── bulk move back functions ──
+  function toggleBulkMode2() {
+    bulkMode2 = !bulkMode2;
+    selectedJobs.clear();
+    $('bulkBar2').style.display = bulkMode2 ? 'flex' : 'none';
+    $('btnBulkMode2').textContent = bulkMode2 ? '✕ ยกเลิกโหมดเลือก' : '☑ เลือกย้ายกลับ';
+    $('btnBulkMode2').style.background = bulkMode2 ? '#fef2f2' : '';
+    $('btnBulkMode2').style.borderColor = bulkMode2 ? '#fca5a5' : '';
+    $('btnBulkMode2').style.color       = bulkMode2 ? '#dc2626' : '';
+    updateBulkBackCount();
+    renderT2();
+  }
+
+  function updateBulkBackCount() {
+    $('selCount2').textContent = selectedJobs.size;
+    $('btnDoBack').disabled = selectedJobs.size === 0;
+    $('bulkBackCount').textContent = `(รายการในงาน ${jobList.length} คน)`;
+    const ca = $('checkAll2');
+    if (ca) {
+      const vis = filterJobList();
+      ca.checked = selectedJobs.size > 0 && vis.every(j => selectedJobs.has(j.id));
+    }
+  }
+
+  function toggleCheckAll2(checked) {
+    const list = filterJobList();
+    list.forEach(j => checked ? selectedJobs.add(j.id) : selectedJobs.delete(j.id));
+    updateBulkBackCount();
+    renderT2();
+  }
+
+  function toggleJobCheck(jobId, checked) {
+    checked ? selectedJobs.add(jobId) : selectedJobs.delete(jobId);
+    updateBulkBackCount();
+  }
+
+  function bulkMoveBack() {
+    if (!selectedJobs.size) return;
+    const count = selectedJobs.size;
+    selectedJobs.forEach(jid => {
+      const job = jobList.find(j => j.id === jid);
+      if (job) {
+        const emp = employees.find(e => e.id === job.empId);
+        if (emp) emp.inJob = false;
+      }
+    });
+    jobList = jobList.filter(j => !selectedJobs.has(j.id));
+    toggleBulkMode2();
+    renderT1(); renderT2(); updateSummary(); saveToStorage();
+    switchTab(1);
+    setTimeout(() => showToast(`ย้ายกลับ ${count} คน เรียบร้อยแล้ว`, 'success'), 100);
+  }
+
+  function bulkMoveSelected() {
+    if (!selectedEmps.size) return;
+    selectedEmps.forEach(id => {
+      const emp = employees.find(e => e.id === id);
+      if (emp && !emp.inJob && !emp.suspended) {
+        emp.inJob = true;
+        jobList.push({
+          id: uid++, empId: emp.id, fn: emp.fn, ln: emp.ln,
+          acc: emp.acc, bank: emp.bank, dept: emp.dept, tc: emp.tc,
+          period: '', rateType: emp.rateType, rate: emp.rate, otRate: emp.otRate,
+          wDays: 0, otH: 0, advance: 0, tcNum: '', unitName: '',
+          otherIncome: 0, otherIncomeNote: '', otherExpense: 0, otherExpenseNote: '',
+          basePay: null, otPay: null, total: null
+        });
+      }
+    });
+    toggleBulkMode();
+    renderT1(); renderT2(); updateSummary(); saveToStorage();
+    switchTab(2);
+  }
+
+  // ── filter state ──
+  const f1 = { dept:'', tc:'', period:'', status:'', rateType:'' };
+  const f2 = { dept:'', tc:'', period:'', rateType:'', calc:'' };
+
+  function applyF1() {
+    f1.dept     = $('f1Dept').value;
+    f1.tc       = $('f1Tc').value;
+    f1.period   = $('f1Period').value;
+    f1.status   = $('f1Status').value;
+    f1.rateType = $('f1RateType').value;
+    ['f1Dept','f1Tc','f1Period','f1Status','f1RateType'].forEach(id => {
+      $(id).classList.toggle('active-filter', !!$(id).value);
+    });
+    renderT1();
+  }
+
+  function applyF2() {
+    f2.dept     = $('f2Dept').value;
+    f2.tc       = $('f2Tc').value;
+    f2.period   = $('f2Period').value;
+    f2.rateType = $('f2RateType').value;
+    f2.calc     = $('f2Calc').value;
+    ['f2Dept','f2Tc','f2Period','f2RateType','f2Calc'].forEach(id => {
+      $(id).classList.toggle('active-filter', !!$(id).value);
+    });
+    renderT2();
+  }
+
+  function clearF1() {
+    ['f1Dept','f1Tc','f1Period','f1Status','f1RateType'].forEach(id => {
+      $(id).value = '';
+      $(id).classList.remove('active-filter');
+    });
+    Object.keys(f1).forEach(k => f1[k] = '');
+    renderT1();
+  }
+
+  function clearF2() {
+    ['f2Dept','f2Tc','f2Period','f2RateType','f2Calc'].forEach(id => {
+      $(id).value = '';
+      $(id).classList.remove('active-filter');
+    });
+    Object.keys(f2).forEach(k => f2[k] = '');
+    renderT2();
+  }
+
+  function filterEmployees() {
+    return employees.filter(e => {
+      if (f1.dept     && e.dept     !== f1.dept)     return false;
+      if (f1.tc       && e.tc       !== f1.tc)       return false;
+      if (f1.period   && e.period   !== f1.period)   return false;
+      if (f1.rateType && e.rateType !== f1.rateType) return false;
+      if (f1.status) {
+        if (f1.status === 'active'    && (e.suspended || e.inJob)) return false;
+        if (f1.status === 'injob'     && !e.inJob)                 return false;
+        if (f1.status === 'suspended' && !e.suspended)             return false;
+      }
+      return true;
+    });
+  }
+
+  function filterJobList() {
+    return jobList.filter(j => {
+      if (f2.dept     && j.dept     !== f2.dept)     return false;
+      if (f2.tc       && j.tc       !== f2.tc)       return false;
+      if (f2.period   && j.period   !== f2.period)   return false;
+      if (f2.rateType && j.rateType !== f2.rateType) return false;
+      if (f2.calc === 'done'    && j.total === null)  return false;
+      if (f2.calc === 'pending' && j.total !== null)  return false;
+      return true;
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // TABLE 1 — add employee
+  // ─────────────────────────────────────────
+  function addEmployee() {
+    const fn = $('fName').value.trim();
+    const ln = $('lName').value.trim();
+    if (!fn || !ln) { showToast('กรุณากรอกชื่อและนามสกุล', 'warning'); return; }
+
+    employees.push({
+      id:   uid++,
+      fn, ln,
+      acc:  $('accNo').value.trim(),
+      bank: $('bank').value,
+      dept: $('dept').value,
+      tc:   $('tc').value,
+      rateType: $('rateType').value,
+      rate:     parseFloat($('rate').value)   || 0,
+      otRate:   parseFloat($('otRate').value) || 0,
+      period: '',
+      inJob: false,
+      suspended: false
+    });
+
+    renderT1();
+    saveToStorage();
+    clearForm();
+  }
+
+  function removeEmployee(id) {
+    employees = employees.filter(e => e.id !== id);
+    jobList   = jobList.filter(j => j.empId !== id);
+    renderT1();
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  // ─────────────────────────────────────────
+  // Add employee from T1 → T2
+  // ─────────────────────────────────────────
+  function addToJob(empId) {
+    const emp = employees.find(e => e.id === empId);
+    if (!emp || emp.inJob) return;
+    emp.inJob = true;
+
+    jobList.push({
+      id:     uid++,
+      empId:  emp.id,
+      fn:     emp.fn,
+      ln:     emp.ln,
+      acc:    emp.acc,
+      bank:   emp.bank,
+      dept:   emp.dept,
+      tc:     emp.tc,
+      period:   emp.period,
+      rateType: emp.rateType,
+      rate:     emp.rate,
+      otRate:   emp.otRate,
+      wDays:        0,
+      otH:          0,
+      advance:      0,
+      tcNum:        '',
+      unitName:     '',
+      otherIncome:       0,
+      otherIncomeNote:   '',
+      otherExpense:      0,
+      otherExpenseNote:  '',
+      basePay:      null,
+      otPay:        null,
+      total:        null
+    });
+
+    renderT1();
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  function removeFromJob(jobId) {
+    const job = jobList.find(j => j.id === jobId);
+    if (job) {
+      const emp = employees.find(e => e.id === job.empId);
+      if (emp) emp.inJob = false;
+    }
+    jobList = jobList.filter(j => j.id !== jobId);
+    renderT1();
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  // ─────────────────────────────────────────
+  // Save period on change → re-render to show rates
+  // ─────────────────────────────────────────
+  function savePeriod(jobId, val) {
+    const j = jobList.find(x => x.id === jobId);
+    if (!j) return;
+    saveAllCurrentInputs();
+    j.period = val;
+    j.basePay = null; j.otPay = null; j.total = null;
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  // บันทึกค่า field ทันทีที่พิมพ์ (สำหรับ input ที่อยู่ใน detail panel)
+  function saveJobText(jobId, field, val) {
+    const j = jobList.find(x => x.id === jobId);
+    if (!j) return;
+    j[field] = val;
+    // อัปเดต border ช่องหมายเหตุ รายได้/รายจ่ายอื่นๆ
+    if (field === 'otherIncomeNote' || field === 'otherExpenseNote') {
+      _highlightNoteFields(j);
+    }
+    saveToStorage();
+  }
+
+  function saveJobField(jobId, field, rawVal) {
+    const j = jobList.find(x => x.id === jobId);
+    if (!j) return;
+    j[field] = parseFloat(rawVal) || 0;
+    // อัปเดต net badge ในตาราง + หมายเหตุสุทธิ โดยไม่ re-render ทั้งหมด
+    const net = (j.otherIncome||0) - (j.otherExpense||0);
+    // main row net cell — อยู่ใน tr ก่อน detail row
+    const allRows = document.querySelectorAll('#t2Body tr');
+    for (const tr of allRows) {
+      const btn = tr.querySelector(`[onclick*="toggleExpand(${jobId})"]`);
+      if (btn) {
+        // หา td หมายเหตุ (td ลำดับที่ 8 index 7 นับจาก 0)
+        const tds = tr.querySelectorAll('td');
+        if (tds[7]) {
+          const c = net>0?'var(--green)':net<0?'var(--red)':'var(--muted)';
+          const s = net>0?'+':'';
+          tds[7].innerHTML = net===0
+            ? `<span style="color:var(--muted);font-size:0.75rem">—</span>`
+            : `<span style="color:${c};font-weight:600;font-size:0.8rem;font-feature-settings:'tnum'">${s}฿${Math.abs(net).toLocaleString('th-TH')}</span>`;
+        }
+        break;
+      }
+    }
+    // อัปเดต netNote ใน detail panel
+    const netEl = document.getElementById(`netNote_${jobId}`);
+    if (netEl) {
+      const c = net>0?'var(--green)':net<0?'var(--red)':'var(--muted)';
+      const s = net>0?'+':'';
+      netEl.innerHTML = net===0
+        ? `<span style="color:var(--muted)">—</span>`
+        : `<span style="color:${c}">${s}฿${Math.abs(net).toLocaleString('th-TH')}</span>`;
+    }
+    // ไฮไลต์ช่องหมายเหตุถ้ายังไม่กรอกแต่มีจำนวนเงิน
+    _highlightNoteFields(j);
+    saveToStorage();
+  }
+
+  function _highlightNoteFields(j) {
+    // หา note input ของ otherIncome
+    const panel = document.querySelector(`[id="netNote_${j.id}"]`);
+    if (!panel) return;
+    const detailPanel = panel.closest('.detail-panel');
+    if (!detailPanel) return;
+    const inputs = detailPanel.querySelectorAll('input[type="text"]');
+    // inputs[0] = otherIncomeNote, inputs[1] = otherExpenseNote (หลังจาก TC, unitName ซึ่งอยู่ใน main row)
+    // ค้นหาจาก oninput attribute แทน
+    detailPanel.querySelectorAll('input').forEach(inp => {
+      const oi = inp.getAttribute('oninput') || '';
+      if (oi.includes("'otherIncomeNote'")) {
+        inp.style.borderColor = (j.otherIncome > 0 && !j.otherIncomeNote.trim()) ? 'var(--red)' : '';
+      }
+      if (oi.includes("'otherExpenseNote'")) {
+        inp.style.borderColor = (j.otherExpense > 0 && !j.otherExpenseNote.trim()) ? 'var(--red)' : '';
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // Read DOM inputs → save to job object
+  // ─────────────────────────────────────────
+  function readInputs(j) {
+    const g = (field) => document.querySelector(`[data-jid="${j.id}"][data-field="${field}"]`);
+    const advEl = g('advance');
+    if (g('wDays')) j.wDays = parseFloat(g('wDays').value) || 0;
+    if (g('otH'))   j.otH   = parseFloat(g('otH').value)   || 0;
+    if (advEl) {
+      let adv = parseFloat(advEl.value) || 0;
+      if (adv > 3500) { adv = 3500; advEl.value = 3500; }
+      j.advance = adv;
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Salary calculation
+  // ─────────────────────────────────────────
+  function calcJob(j) {
+    const r  = j.rate   || 0;
+    const ot = j.otRate || 0;
+    if (j.rateType === 'รายเดือน') {
+      j.basePay = r;
+    } else {
+      j.basePay = j.wDays * r;
+    }
+    j.otPay = j.otH * ot;
+    j.total = j.basePay + j.otPay + (j.otherIncome || 0) - j.advance - (j.otherExpense || 0);
+  }
+
+  // ตรวจสอบว่ากรอกครบก่อนคำนวณ — คืน error string หรือ null ถ้าผ่าน
+  function validateJob(j) {
+    if (!j.period)              return `"${j.fn} ${j.ln}" — กรุณาเลือก งวด`;
+    if (!j.tcNum || !j.tcNum.trim()) return `"${j.fn} ${j.ln}" — กรุณากรอก TC`;
+    if (!(j.wDays > 0))         return `"${j.fn} ${j.ln}" — กรุณากรอก จำนวนวัน (ต้องมากกว่า 0)`;
+    if (j.otH > 300)            return `"${j.fn} ${j.ln}" — จำนวน OT เกิน 300 ชั่วโมง`;
+    if (j.otherIncome > 0 && !j.otherIncomeNote.trim())
+      return `"${j.fn} ${j.ln}" — กรุณากรอกหมายเหตุของ รายได้อื่นๆ`;
+    if (j.otherExpense > 0 && !j.otherExpenseNote.trim())
+      return `"${j.fn} ${j.ln}" — กรุณากรอกหมายเหตุของ รายจ่ายอื่นๆ`;
+    return null;
+  }
+
+  function calcOne(jobId) {
+    const j = jobList.find(x => x.id === jobId);
+    if (!j) return;
+    readInputs(j);
+    const err = validateJob(j);
+    if (err) { showToast('ไม่สามารถคำนวณได้\n' + err, 'warning'); return; }
+    calcJob(j);
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  function calcAll() {
+    const errors = [];
+    jobList.forEach(j => {
+      readInputs(j);
+      const err = validateJob(j);
+      if (err) errors.push(err);
+      else calcJob(j);
+    });
+    if (errors.length) {
+      showToast('รายการต่อไปนี้ยังกรอกข้อมูลไม่ครบ:\n' + errors.join('\n'), 'warning', 7000);
+    }
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  // ─────────────────────────────────────────
+  // Tab switch
+  // ─────────────────────────────────────────
+  function switchTab(n) {
+    [1,2,3].forEach(i => {
+      $(`tabBtn${i}`).classList.toggle('active', i === n);
+      $(`panel${i}`).classList.toggle('active', i === n);
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // Suspend / unsuspend (T1)
+  // ─────────────────────────────────────────
+  function toggleSuspend(empId) {
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return;
+    if (emp.inJob) { showToast('ไม่สามารถระงับได้ขณะอยู่ในงาน — ย้ายกลับก่อน', 'error'); return; }
+    emp.suspended = !emp.suspended;
+    renderT1();
+    saveToStorage();
+  }
+
+  // ─────────────────────────────────────────
+  // Move back from T2 → T1
+  // ─────────────────────────────────────────
+  function moveBack(jobId) {
+    const job = jobList.find(j => j.id === jobId);
+    if (job) {
+      const emp = employees.find(e => e.id === job.empId);
+      if (emp) emp.inJob = false;
+    }
+    jobList = jobList.filter(j => j.id !== jobId);
+    renderT1();
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  // ─────────────────────────────────────────
+  // Suspend from T2 (remove from job + suspend)
+  // ─────────────────────────────────────────
+  function suspendFromJob(jobId) {
+    const job = jobList.find(j => j.id === jobId);
+    if (job) {
+      const emp = employees.find(e => e.id === job.empId);
+      if (emp) { emp.inJob = false; emp.suspended = true; }
+    }
+    jobList = jobList.filter(j => j.id !== jobId);
+    renderT1();
+    renderT2();
+    updateSummary();
+    saveToStorage();
+  }
+
+  // ─────────────────────────────────────────
+  // Renders
+  // ─────────────────────────────────────────
+  function roleChip(tc) {
+    if (tc === 'คนขับเครน')  return `<span class="role-chip role-driver">คนขับเครน</span>`;
+    if (tc === 'คนบอกเครน') return `<span class="role-chip role-signaler">คนบอกเครน</span>`;
+    return tc || '—';
+  }
+
+  function bankChip(bank) {
+    return bank ? `<span class="bank-chip bank-${bank}">${bank}</span>` : '—';
+  }
+
+  function renderT1() {
+    $('t1Count').textContent = employees.length + ' คน';
+    const list = filterEmployees();
+    const isFiltered = Object.values(f1).some(v => v !== '');
+    $('f1Result').innerHTML = isFiltered
+      ? `แสดง <strong>${list.length}</strong> / ${employees.length} รายการ`
+      : '';
+    const tb = $('t1Body');
+    if (!employees.length) {
+      tb.innerHTML = `<tr><td colspan="11"><div class="empty"><div class="ei">👤</div><p>ยังไม่มีรายชื่อ — กรอกข้อมูลด้านบนแล้วกด "เพิ่มเข้ารายการ"</p></div></td></tr>`;
+      return;
+    }
+    if (!list.length) {
+      tb.innerHTML = `<tr><td colspan="11"><div class="empty"><div class="ei">🔍</div><p>ไม่พบรายการที่ตรงกับฟิลเตอร์ที่เลือก</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = list.map((e, i) => {
+      let statusChip, addBtn, suspendBtn;
+
+      if (e.suspended) {
+        statusChip = `<span class="status-chip status-suspended">ระงับ</span>`;
+        addBtn     = `<button class="btn-add-job" disabled>+ เพิ่มเข้างาน</button>`;
+        suspendBtn = `<button class="btn-unsuspend" onclick="toggleSuspend(${e.id})">✓ ยกเลิกระงับ</button>`;
+      } else if (e.inJob) {
+        statusChip = `<span class="status-chip status-injob">อยู่ในงาน</span>`;
+        addBtn     = `<button class="btn-add-job" disabled>✓ อยู่ในงานแล้ว</button>`;
+        suspendBtn = `<button class="btn-suspend" onclick="toggleSuspend(${e.id})" disabled style="opacity:.4;cursor:not-allowed">ระงับ</button>`;
+      } else {
+        statusChip = `<span class="status-chip status-active">ปกติ</span>`;
+        addBtn     = `<button class="btn-add-job" onclick="addToJob(${e.id})">+ เพิ่มเข้างาน</button>`;
+        suspendBtn = `<button class="btn-suspend" onclick="toggleSuspend(${e.id})">ระงับ</button>`;
+      }
+
+      const canSelect = !e.inJob && !e.suspended;
+      const cbHtml = bulkMode
+        ? `<td class="center"><input type="checkbox" class="row-cb" ${selectedEmps.has(e.id)?'checked':''} ${canSelect?'':'disabled style="opacity:.3"'} onchange="toggleEmpCheck(${e.id},this.checked)"></td>`
+        : `<td class="td-idx">${i+1}</td>`;
+      return `
+        <tr class="${e.suspended ? 'row-suspended' : i === list.length-1 ? 'row-new' : ''}">
+          ${cbHtml}
+          <td class="td-name">${e.fn} ${e.ln}</td>
+          <td class="td-acct">${e.acc || '—'}</td>
+          <td>${bankChip(e.bank)}</td>
+          <td class="td-company">${e.dept || '—'}</td>
+          <td>${roleChip(e.tc)}</td>
+          <td style="font-size:0.73rem;line-height:1.8">
+            <span class="rate-type-chip">${e.rateType || '—'}</span><br>
+            <span style="color:var(--muted)">เรท</span> <strong style="color:var(--accent)">฿${(+e.rate).toLocaleString('th-TH')}</strong><br>
+            <span style="color:var(--muted)">OT/ชม.</span> <strong style="color:var(--orange)">฿${(+e.otRate).toLocaleString('th-TH')}</strong>
+          </td>
+          <td>${statusChip}</td>
+          <td class="center">${addBtn}</td>
+          <td class="center">${suspendBtn}</td>
+          <td class="center"><button class="btn-del" onclick="confirmDelete('${e.fn} ${e.ln}', () => removeEmployee(${e.id}))">✕</button></td>
+        </tr>`;
+    }).join('');
+  }
+
+  // ── expanded rows state ──
+  const expandedRows = new Set();
+
+  // save ทันทีทุก keystroke — ป้องกันค่าหายตอน re-render
+  function onJobInput(jobId, field, val, maxVal) {
+    let v = parseFloat(val) || 0;
+    const el = event.target;
+    if (maxVal !== undefined && v > maxVal) {
+      v = maxVal;
+      el.value = maxVal;
+      el.style.borderColor = 'var(--red)';
+      el.title = `เกินกำหนด (สูงสุด ${maxVal})`;
+    } else {
+      el.style.borderColor = '';
+      el.title = '';
+    }
+    const j = jobList.find(x => x.id === jobId);
+    if (j) { j[field] = v; saveToStorage(); }
+  }
+
+  // เซฟค่า input ทุกตัวที่มองเห็นอยู่ใน DOM ก่อน re-render (fallback)
+  function saveAllCurrentInputs() {
+    jobList.forEach(j => {
+      const get = field => document.querySelector(`[data-jid="${j.id}"][data-field="${field}"]`);
+      const advEl  = get('advance');
+      const dayEl  = get('wDays');
+      const otEl   = get('otH');
+      if (dayEl)  { let v = parseFloat(dayEl.value) || 0;  if (v > 31)   { v = 31;   dayEl.value  = 31;   } j.wDays   = v; }
+      if (otEl)   { j.otH     = parseFloat(otEl.value)  || 0; }
+      if (advEl)  { let v = parseFloat(advEl.value) || 0; if (v > 3500)  { v = 3500; advEl.value  = 3500; } j.advance = v; }
+    });
+  }
+
+  function toggleExpand(jobId) {
+    saveAllCurrentInputs();   // ← เซฟก่อนทำลาย DOM
+    if (expandedRows.has(jobId)) expandedRows.delete(jobId);
+    else expandedRows.add(jobId);
+    renderT2();
+  }
+
+  function renderT2() {
+    $('t2Count').textContent = jobList.length + ' คน';
+    const list2 = filterJobList();
+    const isFiltered2 = Object.values(f2).some(v => v !== '');
+    $('f2Result').innerHTML = isFiltered2
+      ? `แสดง <strong>${list2.length}</strong> / ${jobList.length} รายการ`
+      : '';
+    const tb = $('t2Body');
+    if (!jobList.length) {
+      tb.innerHTML = `<tr><td colspan="11"><div class="empty"><div class="ei">📋</div><p>ยังไม่มีรายการ — กดปุ่ม "+ เพิ่มเข้างาน" ในแท็บรายการคนขับ</p></div></td></tr>`;
+      return;
+    }
+    if (!list2.length) {
+      tb.innerHTML = `<tr><td colspan="11"><div class="empty"><div class="ei">🔍</div><p>ไม่พบรายการที่ตรงกับฟิลเตอร์ที่เลือก</p></div></td></tr>`;
+      return;
+    }
+    const pend = `<span class="sal-pend">—</span>`;
+    tb.innerHTML = list2.map((j, i) => {
+      const isOpen  = expandedRows.has(j.id);
+      const calcBtn = j.total !== null
+        ? `<button class="btn-calc done" onclick="calcOne(${j.id})">✓ คำนวณแล้ว</button>`
+        : `<button class="btn-calc" onclick="calcOne(${j.id})">💰 คิดเงินเดือนรวม</button>`;
+
+      const firstCell = bulkMode2
+        ? `<td class="center"><input type="checkbox" class="row-cb" ${selectedJobs.has(j.id)?'checked':''} onchange="toggleJobCheck(${j.id},this.checked)"></td>`
+        : `<td class="td-idx" style="text-align:center">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+              <span style="font-size:0.7rem;color:var(--muted)">${i+1}</span>
+              <button class="btn-expand ${isOpen ? 'open' : ''}" onclick="toggleExpand(${j.id})">▶</button>
+            </div>
+          </td>`;
+
+      const mainRow = `
+        <tr class="${i === list2.length-1 ? 'row-new' : ''}">
+          ${firstCell}
+          <td>
+            <div class="td-name">${j.fn} ${j.ln}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">${bankChip(j.bank)} <span style="font-size:0.68rem">${j.acc || ''}</span></div>
+          </td>
+          <td>
+            <div style="font-size:0.8rem;font-weight:500">${j.dept || '—'}</div>
+            <div style="margin-top:2px">${roleChip(j.tc)}</div>
+          </td>
+          <td>
+            <select class="t2-select" onchange="savePeriod(${j.id}, this.value)">
+              <option value="" ${!j.period ? 'selected' : ''}>— เลือก —</option>
+              <option value="รอบ 15" ${j.period === 'รอบ 15' ? 'selected' : ''}>รอบ 15</option>
+              <option value="รอบ 30" ${j.period === 'รอบ 30' ? 'selected' : ''}>รอบ 30</option>
+            </select>
+          </td>
+          <td>
+            <input class="t2-input" type="number" min="0" max="3500" step="1"
+              data-jid="${j.id}" data-field="advance" value="${j.advance || ''}" placeholder="0"
+              style="width:90px"
+              oninput="onJobInput(${j.id},'advance',this.value,3500)">
+          </td>
+          <td>
+            <input class="t2-input" type="number" min="0" max="31" step="0.5"
+              data-jid="${j.id}" data-field="wDays" value="${j.wDays || ''}" placeholder="0"
+              oninput="onJobInput(${j.id},'wDays',this.value,31)">
+          </td>
+          <td>
+            <input class="t2-input" type="number" min="0" step="0.5"
+              data-jid="${j.id}" data-field="otH" value="${j.otH || ''}" placeholder="0"
+              oninput="onJobInput(${j.id},'otH',this.value,300)">
+          </td>
+          <td>
+            <input class="t2-input" type="text" placeholder="TC…"
+              value="${j.tcNum || ''}" style="width:80px"
+              oninput="saveJobText(${j.id},'tcNum',this.value)">
+          </td>
+          <td>
+            <input class="t2-input" type="text" placeholder="หน่วยงาน…"
+              value="${j.unitName || ''}" style="width:100px"
+              oninput="saveJobText(${j.id},'unitName',this.value)">
+          </td>
+          <td class="sal-total">${j.total !== null ? fmt(j.total) : pend}</td>
+          <td class="center">${calcBtn}</td>
+        </tr>`;
+
+      const detailRow = isOpen ? `
+        <tr class="detail-row">
+          <td colspan="11">
+            <div class="detail-panel">
+              <div class="detail-section-title">📋 ข้อมูลพนักงาน</div>
+              <div class="detail-item">
+                <span class="detail-item-label">ธนาคาร</span>
+                <span class="detail-item-value">${bankChip(j.bank)} ${j.bank || '—'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">เลขบัญชี</span>
+                <span class="detail-item-value" style="font-feature-settings:'tnum'">${j.acc || '—'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">งวด</span>
+                <span class="detail-item-value">${j.period ? `<span class="period-chip">${j.period}</span>` : '—'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">TC</span>
+                <span class="detail-item-value" style="font-weight:600">${j.tcNum || '<span style="color:var(--orange)">ยังไม่ได้กรอก</span>'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">หน่วยงาน</span>
+                <span class="detail-item-value">${j.unitName || '—'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">ประเภทเรท</span>
+                <span class="detail-item-value"><span class="rate-type-chip">${j.rateType || '—'}</span></span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">เรทราคา</span>
+                <span class="detail-item-value" style="color:var(--accent);font-weight:600">฿${(+j.rate).toLocaleString('th-TH')}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">เรท OT / ชั่วโมง</span>
+                <span class="detail-item-value" style="color:var(--orange);font-weight:600">฿${(+j.otRate).toLocaleString('th-TH')}</span>
+              </div>
+              <div class="detail-section-title">✏️ หมายเหตุ / รายการพิเศษ</div>
+              <div class="detail-item" style="grid-column:span 2">
+                <span class="detail-item-label">รายได้อื่นๆ (฿)</span>
+                <div style="display:flex;gap:0.5rem;margin-top:2px;align-items:center">
+                  <input class="t2-input" type="number" min="0" step="1" placeholder="0"
+                    value="${j.otherIncome || ''}" style="width:100px"
+                    oninput="saveJobField(${j.id},'otherIncome',this.value)">
+                  <input class="t2-input" type="text" placeholder="⚠️ ต้องระบุหมายเหตุ เช่น ค่าเบี้ยเลี้ยง..."
+                    value="${j.otherIncomeNote || ''}"
+                    style="flex:1;min-width:160px;${j.otherIncome>0 && !j.otherIncomeNote.trim() ? 'border-color:var(--red)' : ''}"
+                    oninput="saveJobText(${j.id},'otherIncomeNote',this.value)">
+                </div>
+              </div>
+              <div class="detail-item" style="grid-column:span 2">
+                <span class="detail-item-label">รายจ่ายอื่นๆ (฿)</span>
+                <div style="display:flex;gap:0.5rem;margin-top:2px;align-items:center">
+                  <input class="t2-input" type="number" min="0" step="1" placeholder="0"
+                    value="${j.otherExpense || ''}" style="width:100px"
+                    oninput="saveJobField(${j.id},'otherExpense',this.value)">
+                  <input class="t2-input" type="text" placeholder="⚠️ ต้องระบุหมายเหตุ เช่น หักค่าอุปกรณ์..."
+                    value="${j.otherExpenseNote || ''}"
+                    style="flex:1;min-width:160px;${j.otherExpense>0 && !j.otherExpenseNote.trim() ? 'border-color:var(--red)' : ''}"
+                    oninput="saveJobText(${j.id},'otherExpenseNote',this.value)">
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">หมายเหตุสุทธิ</span>
+                <span class="detail-item-value" id="netNote_${j.id}" style="font-weight:700;font-size:0.88rem">${(() => {
+                  const net = (j.otherIncome||0)-(j.otherExpense||0);
+                  if(net===0) return '<span style="color:var(--muted)">—</span>';
+                  const c = net>0?'var(--green)':'var(--red)';
+                  const s = net>0?'+':'';
+                  return `<span style="color:${c}">${s}฿${Math.abs(net).toLocaleString('th-TH')}</span>`;
+                })()}</span>
+              </div>
+              <div class="detail-section-title">💰 รายละเอียดการคำนวณ</div>
+              <div class="detail-item">
+                <span class="detail-item-label">รายได้พื้นฐาน</span>
+                <span class="detail-item-value sal-base">${j.basePay !== null ? fmt(j.basePay) : '—'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">ค่า OT (${j.otH} ชม.)</span>
+                <span class="detail-item-value sal-ot">${j.otPay !== null ? fmt(j.otPay) : '—'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">หักเงินเบิก</span>
+                <span class="detail-item-value" style="color:var(--red)">${j.advance > 0 ? '−฿'+j.advance.toLocaleString('th-TH') : '—'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-item-label">ยอดก่อนภาษี</span>
+                <span class="detail-item-value sal-total">${j.total !== null ? fmt(j.total) : '—'}</span>
+              </div>
+              <div class="detail-section-title">⚙️ จัดการ</div>
+              <div style="grid-column:1/-1;display:flex;gap:0.6rem;padding-top:0.2rem">
+                <button class="btn-move" onclick="moveBack(${j.id})">← ย้ายกลับ</button>
+                <button class="btn-suspend" onclick="confirmDelete('${j.fn} ${j.ln} (ระงับออกจากงาน)', () => suspendFromJob(${j.id}))">ระงับ</button>
+              </div>
+            </div>
+          </td>
+        </tr>` : '';
+
+      return mainRow + detailRow;
+    }).join('');
+  }
+
+  // ─────────────────────────────────────────
+  // Summary
+  // ─────────────────────────────────────────
+  function updateSummary() {
+    const done = jobList.filter(j => j.total !== null);
+    $('sumEmp').textContent     = jobList.length + ' คน';
+    $('sumBase').textContent    = fmt(done.reduce((s,j) => s + j.basePay,  0));
+    $('sumOT').textContent      = fmt(done.reduce((s,j) => s + j.otPay,    0));
+    $('sumAdvance').textContent = fmt(done.reduce((s,j) => s + j.advance,  0));
+    $('sumTotal').textContent   = fmt(done.reduce((s,j) => s + j.total,    0));
+  }
+
+  // ─────────────────────────────────────────
+  // History — save / render / delete
+  // ─────────────────────────────────────────
+  function saveHistory() {
+    if (!jobList.length) { showToast('ไม่มีรายการในตารางงาน', 'warning'); return; }
+    const hasCalc = jobList.some(j => j.total !== null);
+    if (!hasCalc) { showToast('กรุณาคิดเงินเดือนก่อนบันทึกประวัติ', 'warning'); return; }
+
+    const snapshot = {
+      hid:       uid++,
+      timestamp: new Date(),
+      jobs:      jobList.map(j => ({ ...j }))   // deep-copy each job
+    };
+    payHistory.unshift(snapshot);   // newest first
+    renderHistory();
+    saveToStorage();
+    switchTab(3);
+    setTimeout(() => showToast(`บันทึกประวัติ ${snapshot.jobs.length} รายการเรียบร้อย`, 'success'), 150);
+  }
+
+  function toggleHist(hid) {
+    if (expandedHist.has(hid)) expandedHist.delete(hid);
+    else expandedHist.add(hid);
+    renderHistory();
+  }
+
+  function deleteHistory(hid) {
+    payHistory = payHistory.filter(h => h.hid !== hid);
+    expandedHist.delete(hid);
+    // ล้าง row keys ของ snapshot นี้ด้วย
+    for (const key of [...expandedHistJobs]) {
+      if (key.startsWith(`${hid}_`)) expandedHistJobs.delete(key);
+    }
+    renderHistory();
+    saveToStorage();
+  }
+
+  function renderHistory() {
+    $('t3Count').textContent = payHistory.length + ' รายการ';
+    const container = $('histList');
+    if (!payHistory.length) {
+      container.innerHTML = `
+        <div class="hist-empty">
+          <div class="ei">📜</div>
+          <p>ยังไม่มีประวัติ — กด "💾 บันทึกประวัติ" ในแท็บคนขับที่ใช้งาน</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = payHistory.map(h => {
+      const isOpen   = expandedHist.has(h.hid);
+      const d        = h.timestamp;
+      const dateStr  = fmtDate(d);
+      const timeStr  = fmtTime(d);
+      const done     = h.jobs.filter(j => j.total !== null);
+      const grandTotal = done.reduce((s, j) => s + j.total, 0);
+      const pend     = `<span class="sal-pend">—</span>`;
+
+      const detailTable = isOpen ? `
+        <div class="hist-body">
+          <table>
+            <thead>
+              <tr>
+                <th class="center" style="width:44px"></th>
+                <th>ชื่อ-นามสกุล</th>
+                <th>บริษัท / หน้าที่</th>
+                <th>งวด</th>
+                <th>วัน</th>
+                <th>OT</th>
+                <th>รายได้พื้นฐาน</th>
+                <th>ค่า OT</th>
+                <th>ยอดก่อนภาษี</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${h.jobs.map((j, i) => {
+                const rowKey = `${h.hid}_${j.id ?? i}`;
+                const rowOpen = expandedHistJobs.has(rowKey);
+                const net = (j.otherIncome||0) - (j.otherExpense||0);
+                const mainRow = `
+                  <tr>
+                    <td class="td-idx" style="text-align:center">
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+                        <span style="font-size:0.7rem;color:var(--muted)">${i+1}</span>
+                        <button class="btn-expand ${rowOpen ? 'open' : ''}" onclick="toggleHistJob(${h.hid}, ${j.id ?? i})">▶</button>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="td-name">${j.fn} ${j.ln}</div>
+                      <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">${bankChip(j.bank)} <span style="font-size:0.68rem">${j.acc || ''}</span></div>
+                    </td>
+                    <td>
+                      <div style="font-size:0.8rem;font-weight:500">${j.dept || '—'}</div>
+                      <div style="margin-top:2px">${roleChip(j.tc)}</div>
+                    </td>
+                    <td>${j.period ? `<span class="period-chip">${j.period}</span>` : '—'}</td>
+                    <td class="td-num">${j.wDays}</td>
+                    <td class="td-num">${j.otH}</td>
+                    <td class="sal-base">${j.basePay !== null ? fmt(j.basePay) : pend}</td>
+                    <td class="sal-ot">${j.otPay !== null ? fmt(j.otPay) : pend}</td>
+                    <td class="sal-total">${j.total !== null ? fmt(j.total) : pend}</td>
+                  </tr>`;
+                const detailRow = rowOpen ? `
+                  <tr class="detail-row">
+                    <td colspan="9">
+                      <div class="detail-panel">
+                        <div class="detail-section-title">📋 ข้อมูลพนักงาน</div>
+                        <div class="detail-item"><span class="detail-item-label">ธนาคาร</span><span class="detail-item-value">${bankChip(j.bank)} ${j.bank || '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">เลขบัญชี</span><span class="detail-item-value" style="font-feature-settings:'tnum'">${j.acc || '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">งวด</span><span class="detail-item-value">${j.period ? `<span class="period-chip">${j.period}</span>` : '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">TC</span><span class="detail-item-value" style="font-weight:600">${j.tcNum || '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">หน่วยงาน</span><span class="detail-item-value">${j.unitName || '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">ประเภทเรท</span><span class="detail-item-value"><span class="rate-type-chip">${j.rateType || '—'}</span></span></div>
+                        <div class="detail-item"><span class="detail-item-label">เรท (฿)</span><span class="detail-item-value">${j.rate ? j.rate.toLocaleString('th-TH') : '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">เรท OT (฿/ชม.)</span><span class="detail-item-value">${j.otRate ? j.otRate.toLocaleString('th-TH') : '—'}</span></div>
+                        <div class="detail-section-title" style="margin-top:0.6rem">💰 สรุปการคิดเงิน</div>
+                        <div class="detail-item"><span class="detail-item-label">รายได้พื้นฐาน</span><span class="detail-item-value sal-base">${j.basePay !== null ? fmt(j.basePay) : '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">ค่า OT (${j.otH} ชม.)</span><span class="detail-item-value sal-ot">${j.otPay !== null ? fmt(j.otPay) : '—'}</span></div>
+                        <div class="detail-item"><span class="detail-item-label">หักเงินเบิก</span><span class="detail-item-value" style="color:var(--red)">${j.advance > 0 ? '−฿'+j.advance.toLocaleString('th-TH') : '—'}</span></div>
+                        ${net !== 0 ? `<div class="detail-item"><span class="detail-item-label">รายได้/รายจ่ายอื่นๆ</span><span class="detail-item-value" style="color:${net>0?'var(--green)':'var(--red)'};font-weight:600">${net>0?'+':''}฿${Math.abs(net).toLocaleString('th-TH')}</span></div>` : ''}
+                        ${j.otherIncomeNote ? `<div class="detail-item"><span class="detail-item-label" style="color:var(--green)">รายได้อื่นๆ</span><span class="detail-item-value">+฿${(j.otherIncome||0).toLocaleString('th-TH')} — ${j.otherIncomeNote}</span></div>` : ''}
+                        ${j.otherExpenseNote ? `<div class="detail-item"><span class="detail-item-label" style="color:var(--red)">รายจ่ายอื่นๆ</span><span class="detail-item-value">−฿${(j.otherExpense||0).toLocaleString('th-TH')} — ${j.otherExpenseNote}</span></div>` : ''}
+                        <div class="detail-item"><span class="detail-item-label">ยอดก่อนภาษี</span><span class="detail-item-value sal-total" style="font-size:1rem">${j.total !== null ? fmt(j.total) : '—'}</span></div>
+                      </div>
+                    </td>
+                  </tr>` : '';
+                return mainRow + detailRow;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>` : '';
+
+      return `
+        <div class="hist-entry">
+          <div class="hist-head" onclick="toggleHist(${h.hid})">
+            <span class="hist-toggle ${isOpen ? 'open' : ''}">▶</span>
+            <span class="hist-date">${dateStr}</span>
+            <span class="hist-time">${timeStr} น.</span>
+            <span class="hist-badge">👤 ${h.jobs.length} คน</span>
+            <span class="hist-total">${fmt(grandTotal)}</span>
+            <button class="hist-del" onclick="event.stopPropagation(); confirmDelete('ประวัติ ${dateStr} ${timeStr}', () => deleteHistory(${h.hid}))">✕</button>
+          </div>
+          ${detailTable}
+        </div>`;
+    }).join('');
+  }
+
+  function exportHistoryCSV() {
+    if (!payHistory.length) { showToast('ไม่มีประวัติการคิดเงิน', 'warning'); return; }
+    const hdr = ['วันที่','เวลา','ชื่อ','นามสกุล','บริษัท','หน้าที่','งวด','จำนวนวัน','OT(ชม.)','รายได้อื่นๆ','รายจ่ายอื่นๆ','หักเงินเบิก','รายได้พื้นฐาน','ค่าOT','ยอดก่อนภาษี'];
+    const rows = [];
+    payHistory.forEach(h => {
+      const d = h.timestamp;
+      const dateStr = fmtDate(d);
+      const timeStr = fmtTime(d);
+      h.jobs.forEach(j => {
+        rows.push([dateStr, timeStr, j.fn, j.ln, j.dept, j.tc, j.period, j.wDays, j.otH, j.otherIncome||0, j.otherExpense||0, j.advance, j.basePay??'', j.otPay??'', j.total??'']);
+      });
+    });
+    const csv = [hdr, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `crane_payroll_history_${Date.now()}.csv`;
+    a.click();
+  }
+
+  // ─────────────────────────────────────────
+  // Clear form
+  // ─────────────────────────────────────────
+  function clearForm() {
+    ['fName','lName','accNo','rate','otRate'].forEach(id => $(id).value = '');
+    ['bank','dept','tc','rateType'].forEach(id => $(id).value = '');
+  }
+
+  // ─────────────────────────────────────────
+  // Export CSV
+  // ─────────────────────────────────────────
+  function exportCSV(table) {
+    let hdr, body;
+    if (table === 1) {
+      if (!employees.length) { showToast('ไม่มีข้อมูลรายชื่อคนขับ', 'warning'); return; }
+      hdr  = ['#','ชื่อ','นามสกุล','เลขบัญชี','ธนาคาร','บริษัท','หน้าที่','งวด','ประเภทเรท','เรทราคา','เรท OT (฿/ชม.)'];
+      body = employees.map((e,i) => [i+1, e.fn, e.ln, e.acc, e.bank, e.dept, e.tc, e.period, e.rateType, e.rate, e.otRate]);
+    } else {
+      if (!jobList.length) { showToast('ไม่มีข้อมูลตารางงาน', 'warning'); return; }
+      hdr  = ['#','ชื่อ','นามสกุล','ธนาคาร','บริษัท','หน้าที่','งวด','ประเภทเรท','เรทราคา','เรท OT (฿/ชม.)','เงินเบิก','จำนวนวัน','OT(ชม.)','รายได้อื่นๆ','รายจ่ายอื่นๆ','รายได้พื้นฐาน','ค่าOT','หักเงินเบิก','ยอดก่อนภาษี'];
+      body = jobList.map((j,i) => [i+1, j.fn, j.ln, j.bank, j.dept, j.tc, j.period, j.rateType, j.rate, j.otRate, j.advance, j.wDays, j.otH, j.otherIncome||0, j.otherExpense||0, j.basePay??'', j.otPay??'', j.advance||'', j.total??'']);
+    }
+    const csv = [hdr, ...body].map(r => r.map(v => `"${v}"`).join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `crane_payroll_t${table}_${Date.now()}.csv`;
+    a.click();
+  }
+
+  // ── Demo seed data ──
+  function seedDemoData() {
+    const demoEmps = [
+      { fn:'สมชาย',    ln:'ใจดี',       acc:'101-2-34567-8', bank:'KBank', dept:'บริษัท ซัน จูปิเตอร์ จำกัด', tc:'คนขับเครน',  rateType:'รายวัน',   rate:650,  otRate:81.25 },
+      { fn:'วิชัย',    ln:'พรมมา',      acc:'023-1-56789-0', bank:'BBL',   dept:'บริษัท ซัน จูปิเตอร์ จำกัด', tc:'คนขับเครน',  rateType:'รายวัน',   rate:600,  otRate:75   },
+      { fn:'สุรชัย',   ln:'ทองดี',      acc:'409-0-12345-6', bank:'KTB',   dept:'บริษัท ซัน จูปิเตอร์ จำกัด', tc:'คนบอกเครน',  rateType:'รายวัน',   rate:500,  otRate:62.5 },
+      { fn:'ประสิทธิ์', ln:'แสงจันทร์',  acc:'333-3-21098-7', bank:'SCB',   dept:'บริษัท ซัน จูปิเตอร์ จำกัด', tc:'คนขับเครน',  rateType:'รายเดือน', rate:18000, otRate:112.5 },
+      { fn:'นิคม',     ln:'บุญมา',      acc:'116-0-98765-4', bank:'BAY',   dept:'บริษัท ซัน จูปิเตอร์ จำกัด', tc:'คนบอกเครน',  rateType:'รายวัน',   rate:480,  otRate:60   },
+      { fn:'สมศักดิ์', ln:'วงศ์ไทย',    acc:'201-5-43210-9', bank:'ttb',   dept:'ควอลิตี้ แมชชีน',            tc:'คนขับเครน',  rateType:'รายวัน',   rate:700,  otRate:87.5 },
+      { fn:'ชัยณรงค์', ln:'ศรีสุข',     acc:'071-2-11223-3', bank:'KBank', dept:'ควอลิตี้ แมชชีน',            tc:'คนขับเครน',  rateType:'รายเดือน', rate:20000, otRate:125  },
+      { fn:'วรวุฒิ',   ln:'มั่นคง',     acc:'456-7-88990-1', bank:'UOB',   dept:'ควอลิตี้ แมชชีน',            tc:'คนบอกเครน',  rateType:'รายวัน',   rate:520,  otRate:65   },
+      { fn:'ธนวัฒน์',  ln:'พลายงาม',   acc:'502-1-33445-5', bank:'BBL',   dept:'ควอลิตี้ แมชชีน',            tc:'คนขับเครน',  rateType:'รายวัน',   rate:630,  otRate:78.75 },
+      { fn:'อนุชา',    ln:'ดาวเรือง',   acc:'308-4-77665-2', bank:'SCB',   dept:'ควอลิตี้ แมชชีน',            tc:'คนบอกเครน',  rateType:'รายเดือน', rate:15000, otRate:93.75 },
+    ];
+
+    employees = demoEmps.map((e,i) => ({ id: uid++, ...e, period:'', inJob:false, suspended:false }));
+
+    // ใส่ 6 คนแรกเข้างาน พร้อมข้อมูลและคำนวณเสร็จ
+    const jobData = [
+      { idx:0, period:'รอบ 30', wDays:26, otH:12, advance:2000, otherIncome:500,  otherIncomeNote:'ค่าเบี้ยเลี้ยง', otherExpense:0,   otherExpenseNote:'' },
+      { idx:1, period:'รอบ 30', wDays:25, otH:8,  advance:1500, otherIncome:0,    otherIncomeNote:'',                otherExpense:300, otherExpenseNote:'หักค่าอุปกรณ์' },
+      { idx:2, period:'รอบ 15', wDays:13, otH:6,  advance:1000, otherIncome:200,  otherIncomeNote:'ค่าพาหนะ',       otherExpense:0,   otherExpenseNote:'' },
+      { idx:3, period:'รอบ 30', wDays:0,  otH:20, advance:3500, otherIncome:1000, otherIncomeNote:'โบนัส',           otherExpense:0,   otherExpenseNote:'' },
+      { idx:4, period:'รอบ 15', wDays:14, otH:0,  advance:500,  otherIncome:0,    otherIncomeNote:'',                otherExpense:200, otherExpenseNote:'หักประกัน' },
+      { idx:5, period:'รอบ 30', wDays:22, otH:15, advance:2500, otherIncome:800,  otherIncomeNote:'ค่าเบี้ยขยัน',   otherExpense:0,   otherExpenseNote:'' },
+    ];
+
+    jobData.forEach(d => {
+      const emp = employees[d.idx];
+      emp.inJob = true;
+      const j = {
+        id: uid++, empId: emp.id, fn: emp.fn, ln: emp.ln,
+        acc: emp.acc, bank: emp.bank, dept: emp.dept, tc: emp.tc,
+        period: d.period, rateType: emp.rateType, rate: emp.rate, otRate: emp.otRate,
+        wDays: d.wDays, otH: d.otH, advance: d.advance,
+        otherIncome: d.otherIncome, otherIncomeNote: d.otherIncomeNote,
+        otherExpense: d.otherExpense, otherExpenseNote: d.otherExpenseNote,
+        basePay: null, otPay: null, total: null
+      };
+      calcJob(j);
+      jobList.push(j);
+    });
+
+    // สร้างประวัติ 2 งวดย้อนหลัง
+    const mkDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate()-daysAgo); return d; };
+    const hist1jobs = employees.slice(0,5).map((emp,i) => {
+      const days=[24,25,20,0,26][i], ot=[10,5,8,15,0][i], adv=[1500,0,2000,3000,500][i];
+      const j = { id:uid++, empId:emp.id, fn:emp.fn, ln:emp.ln, acc:emp.acc, bank:emp.bank,
+        dept:emp.dept, tc:emp.tc, period:'รอบ 15', rateType:emp.rateType, rate:emp.rate, otRate:emp.otRate,
+        wDays:days, otH:ot, advance:adv, otherIncome:0, otherIncomeNote:'', otherExpense:0, otherExpenseNote:'',
+        basePay:null, otPay:null, total:null };
+      calcJob(j); return j;
+    });
+    const hist2jobs = employees.slice(3,9).map((emp,i) => {
+      const days=[0,27,23,21,26,15][i], ot=[18,0,12,6,10,4][i], adv=[3500,0,1000,2000,0,800][i];
+      const j = { id:uid++, empId:emp.id, fn:emp.fn, ln:emp.ln, acc:emp.acc, bank:emp.bank,
+        dept:emp.dept, tc:emp.tc, period:'รอบ 30', rateType:emp.rateType, rate:emp.rate, otRate:emp.otRate,
+        wDays:days, otH:ot, advance:adv, otherIncome:0, otherIncomeNote:'', otherExpense:0, otherExpenseNote:'',
+        basePay:null, otPay:null, total:null };
+      calcJob(j); return j;
+    });
+
+    payHistory = [
+      { hid: uid++, timestamp: mkDate(15), jobs: hist2jobs },
+      { hid: uid++, timestamp: mkDate(30), jobs: hist1jobs },
+    ];
+
+    saveToStorage();
+    renderT1(); renderT2(); renderHistory(); updateSummary();
+    showToast('โหลดข้อมูลทดสอบ 10 คนเรียบร้อย!', 'success');
+  }
+
+  // ── Initial render หลัง load ──
+  renderT1();
+  renderT2();
+  renderHistory();
+  updateSummary();
 </script>
+
 </body>
 </html>
