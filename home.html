@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการพนักงาน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f1f5f9; --surface: #ffffff; --border: #e2e8f0; --border2: #cbd5e1;
+      --accent: #1d4ed8; --accent2: #0369a1; --green: #16a34a;
+      --text: #0f172a; --text2: #334155; --muted: #94a3b8;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Kanit', sans-serif; font-weight: 400;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    header {
+      background: var(--surface); border-bottom: 3px solid var(--accent);
+      box-shadow: var(--shadow); padding: 1rem 2rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .logo-img {
+      height: 48px; width: auto; object-fit: contain;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
+    }
+    .header-text h1 { font-size: 1.5rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+    .header-text p { font-size: 0.75rem; color: var(--muted); font-weight: 300; letter-spacing: 0.05em; }
+    main {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 3rem 2rem; gap: 2rem;
+    }
+    .home-heading { text-align: center; }
+    .home-heading h2 { font-size: 1.4rem; font-weight: 600; color: var(--text2); margin-bottom: 0.4rem; }
+    .home-heading p { font-size: 0.88rem; color: var(--muted); }
+    .home-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1.5rem; max-width: 860px; width: 100%;
+    }
+    @media (max-width: 620px) { .home-grid { grid-template-columns: 1fr; } }
+    .home-card {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 16px; padding: 2.5rem 2rem;
+      text-decoration: none; color: var(--text);
+      transition: all 0.22s ease;
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      box-shadow: var(--shadow); cursor: pointer;
+    }
+    .home-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 28px rgba(29,78,216,0.13);
+      transform: translateY(-4px);
+    }
+    .home-card-icon { font-size: 3.2rem; line-height: 1; }
+    .home-card-title { font-size: 1.15rem; font-weight: 700; color: var(--text); text-align: center; line-height: 1.4; }
+    .home-card-desc { font-size: 0.84rem; color: var(--muted); font-weight: 300; text-align: center; line-height: 1.65; }
+    .home-card-badge {
+      background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe;
+      border-radius: 20px; padding: 0.22rem 0.9rem;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+    }
+    .home-card-arrow { font-size: 1.25rem; color: var(--muted); transition: transform 0.2s, color 0.2s; }
+    .home-card:hover .home-card-arrow { transform: translateX(5px); color: var(--accent); }
+    footer { text-align: center; padding: 1.25rem; font-size: 0.75rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="crane/sunjupiter-logo.png" alt="logo" class="logo-img" onerror="this.style.display='none'">
+    <div class="header-text">
+      <h1>ระบบจัดการพนักงาน</h1>
+      <p>Zento Employee Management System</p>
+    </div>
+  </header>
+  <main>
+    <div class="home-heading">
+      <h2>เลือกโปรแกรมที่ต้องการใช้งาน</h2>
+      <p>ข้อมูลของแต่ละโปรแกรมจะแยกออกจากกันโดยสมบูรณ์</p>
+    </div>
+    <div class="home-grid">
+      <a href="crane/index.html" class="home-card">
+        <div class="home-card-icon">🏗️</div>
+        <div class="home-card-title">คิดเงินเดือนคนขับเครน</div>
+        <div class="home-card-desc">คำนวณเงินเดือน ค่าล่วงเวลา หักเงินเบิก<br>สรุปยอดรายงวด พร้อมพิมพ์ใบสรุป</div>
+        <div class="home-card-badge">Payroll System</div>
+        <div class="home-card-arrow">→</div>
+      </a>
+      <a href="allowance/index.html" class="home-card">
+        <div class="home-card-icon">💰</div>
+        <div class="home-card-title">เบี้ยเลี้ยงและรายได้รายจ่ายอื่นๆ</div>
+        <div class="home-card-desc">บันทึกเบี้ยเลี้ยงรายวัน รายได้อื่นๆ<br>รายจ่ายอื่นๆ สรุปยอดพร้อมพิมพ์</div>
+        <div class="home-card-badge">Allowance System</div>
+        <div class="home-card-arrow">→</div>
+      </a>
+    </div>
+  </main>
+  <footer>© 2568 Zento Employee Management</footer>
+</body>
+</html>
