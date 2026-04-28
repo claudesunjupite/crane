@@ -703,6 +703,15 @@
       <button class="tab-btn" onclick="switchTab(2,this)">📋 บันทึกรายการ <span id="t2Count" style="background:#eff6ff;color:var(--accent);border-radius:20px;padding:0.1rem 0.5rem;font-size:0.72rem;margin-left:4px">0</span></button>
       <button class="tab-btn" onclick="switchTab(3,this)">🗂 ประวัติการบันทึก <span id="t3Count" style="background:#eff6ff;color:var(--accent);border-radius:20px;padding:0.1rem 0.5rem;font-size:0.72rem;margin-left:4px">0</span></button>
       <button class="tab-btn" onclick="switchTab(4,this);renderT4()">📊 ตารางประจำเดือน <span id="t4Count" style="background:#eff6ff;color:var(--accent);border-radius:20px;padding:0.1rem 0.5rem;font-size:0.72rem;margin-left:4px">0</span></button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0">
+        <span style="font-size:1rem">🔍</span>
+        <input id="globalSearch" type="text" placeholder="ค้นหาชื่อ-นามสกุล…"
+          style="border:1.5px solid var(--border2);border-radius:8px;padding:0.3rem 0.7rem;font-family:'Kanit',sans-serif;font-size:0.82rem;color:var(--text);width:200px;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"
+          oninput="searchQuery=this.value.trim().toLowerCase();renderAll();renderT4()">
+        <button onclick="$('globalSearch').value='';searchQuery='';renderAll();renderT4()"
+          style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:1rem;padding:0.1rem 0.3rem;border-radius:4px" title="ล้างการค้นหา">✕</button>
+      </div>
     </div>
 
     <!-- TAB 1 -->
@@ -894,20 +903,55 @@
             <th class="center">ประเภท</th>
             <th class="center">วัน/คืน</th>
             <th class="center">เบี้ยเลี้ยง</th>
-            <th class="center">รายได้/จ่ายอื่น</th>
+            <th class="center">รายได้อื่นๆ</th>
+            <th class="center">รายจ่ายอื่นๆ</th>
+            <th class="center">รายได้/จ่ายสุทธิ</th>
             <th class="center">ยอดสุทธิ</th>
             <th>หมายเหตุ</th>
+            <th class="center">ลบ</th>
           </tr></thead>
           <tbody id="t4Body"></tbody>
         </table>
       </div>
     </div>
   </div>
+
+<!-- Print History Filter Modal -->
+<div class="confirm-overlay" id="histPrintOverlay" style="display:none;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:1.5rem;width:340px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:0.9rem">
+    <div style="font-size:1rem;font-weight:700;color:var(--text)">🖨 พิมพ์ประวัติ — เลือก Filter</div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+      <label style="font-size:0.82rem;font-weight:600;color:var(--text2)">ค้นหาชื่อ</label>
+      <input id="hp_name" type="text" placeholder="พิมพ์ชื่อ-นามสกุล…" style="border:1.5px solid var(--border2);border-radius:7px;padding:0.35rem 0.7rem;font-family:'Kanit',sans-serif;font-size:0.82rem">
+    </div>
+    <div style="display:flex;gap:0.75rem">
+      <div style="flex:1;display:flex;flex-direction:column;gap:0.4rem">
+        <label style="font-size:0.82rem;font-weight:600;color:var(--text2)">ตำแหน่ง</label>
+        <select id="hp_tc" style="border:1.5px solid var(--border2);border-radius:7px;padding:0.32rem 0.5rem;font-family:'Kanit',sans-serif;font-size:0.8rem">
+          <option value="">ทั้งหมด</option>
+          <option value="คนขับเครน">คนขับเครน</option>
+          <option value="คนบอกเครน">คนบอกเครน</option>
+        </select>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:0.4rem">
+        <label style="font-size:0.82rem;font-weight:600;color:var(--text2)">บริษัท</label>
+        <select id="hp_dept" style="border:1.5px solid var(--border2);border-radius:7px;padding:0.32rem 0.5rem;font-family:'Kanit',sans-serif;font-size:0.8rem">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.6rem;justify-content:flex-end;padding-top:0.3rem">
+      <button onclick="closeHistPrintModal()" style="border:1.5px solid var(--border2);background:#f8fafc;color:var(--text2);border-radius:8px;padding:0.42rem 1rem;font-family:'Kanit',sans-serif;font-size:0.84rem;cursor:pointer">ยกเลิก</button>
+      <button onclick="doHistPrint()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0.42rem 1.1rem;font-family:'Kanit',sans-serif;font-size:0.84rem;font-weight:600;cursor:pointer">🖨 พิมพ์</button>
+    </div>
+  </div>
+</div>
 </main>
 
 <script>
 // ── Constants ──
 const STORAGE_KEY = 'allowanceApp_v1';
+let searchQuery = '';
 // ── Firebase Realtime Database ──
 const _fbConfig = {
   apiKey: "AIzaSyCcYFM2R3GV2eKD_dkWBGNyS6gRLBtqSdA",
@@ -1188,6 +1232,7 @@ function filterEmpList(){
     if(f1.tc   && e.tc!==f1.tc) return false;
     if(f1.status==='active'    && e.suspended) return false;
     if(f1.status==='suspended' && !e.suspended) return false;
+    if(searchQuery && !(e.fn+' '+e.ln).toLowerCase().includes(searchQuery)) return false;
     return true;
   });
 }
@@ -1695,6 +1740,7 @@ function filterJobList(){
     if(f2.status==='suspended' && !j.suspended) return false;
     if(f2.calc==='done'    && j.total===null) return false;
     if(f2.calc==='pending' && j.total!==null) return false;
+    if(searchQuery && !(j.fn+' '+j.ln).toLowerCase().includes(searchQuery)) return false;
     if(f2.dateFrom||f2.dateTo){
       const from=f2.dateFrom||'0000-01-01';
       const to=f2.dateTo||'9999-12-31';
@@ -2027,7 +2073,9 @@ function updateSummary(){
 function renderT3(){
   $('t3Count').textContent=payHistory.length;
   if(!payHistory.length){ $('t3Body').innerHTML=`<div style="text-align:center;padding:3rem;color:var(--muted)">ยังไม่มีประวัติการบันทึก</div>`; return; }
-  $('t3Body').innerHTML=payHistory.map(h=>{
+  const t3List=searchQuery?payHistory.filter(h=>h.jobs.some(j=>(j.fn+' '+j.ln).toLowerCase().includes(searchQuery))):payHistory;
+  if(!t3List.length){ $('t3Body').innerHTML=`<div style="text-align:center;padding:3rem;color:var(--muted)">ไม่พบรายการที่ตรงกับการค้นหา</div>`; return; }
+  $('t3Body').innerHTML=t3List.map(h=>{
     const d=new Date(h.date);
     const total=h.jobs.reduce((s,j)=>s+(j.total||0),0);
     return `
@@ -2038,7 +2086,7 @@ function renderT3(){
             <div class="hist-title">บันทึกวันที่ ${fmtDate(d,false)} ${fmtTime(d)}</div>
             <div class="hist-meta">ยอดรวม ฿${total.toLocaleString('th-TH')}</div>
           </div>
-          <button class="hist-print" onclick="event.stopPropagation();printSnapshot(${h.id})">🖨 พิมพ์</button>
+          <button class="hist-print" onclick="event.stopPropagation();openHistPrintModal(${h.id})">🖨 พิมพ์</button>
           <button class="hist-del" onclick="event.stopPropagation();showConfirmModal({icon:'🗑️',title:'ลบประวัติ',msg:'ลบประวัติรายการนี้?',okLabel:'ลบเลย',okClass:'btn-confirm-del'},()=>deleteHistory(${h.id}))">✕</button>
           <span class="hist-arrow" id="harrow_${h.id}">▶</span>
         </div>
@@ -2076,6 +2124,53 @@ function deleteHistory(hid){
   payHistory=payHistory.filter(h=>h.id!==hid);
   saveToStorage(); renderT3();
   showToast('ลบประวัติเรียบร้อย','success');
+}
+
+let _histPrintId = null;
+function openHistPrintModal(hid){
+  _histPrintId = hid;
+  // Populate dept options from history jobs
+  const h = payHistory.find(x=>x.id===hid);
+  const depts = [...new Set((h?.jobs||[]).map(j=>j.dept).filter(Boolean))].sort();
+  const el = $('hp_dept');
+  el.innerHTML = '<option value="">ทั้งหมด</option>' + depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+  $('hp_name').value = '';
+  $('hp_tc').value = '';
+  const ov = $('histPrintOverlay');
+  ov.style.display='flex';
+}
+function closeHistPrintModal(){ $('histPrintOverlay').style.display='none'; _histPrintId=null; }
+function doHistPrint(){
+  const h=payHistory.find(x=>x.id===_histPrintId); if(!h) return;
+  const nameQ=($('hp_name').value||'').trim().toLowerCase();
+  const tcQ=$('hp_tc').value;
+  const deptQ=$('hp_dept').value;
+  let jobs=h.jobs;
+  if(nameQ) jobs=jobs.filter(j=>(j.fn+' '+j.ln).toLowerCase().includes(nameQ));
+  if(tcQ)   jobs=jobs.filter(j=>j.tc===tcQ);
+  if(deptQ) jobs=jobs.filter(j=>j.dept===deptQ);
+  if(!jobs.length){ showToast('ไม่มีรายการที่ตรงเงื่อนไข','warning'); return; }
+  const cols=PRINT_COLS.filter(c=>c.def);
+  const d=new Date(h.date); const now=new Date();
+  const logoSrc=document.querySelector('.logo-img')?.src||'';
+  const hdrHtml=`<tr>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr>`;
+  const bodyHtml=jobs.map((j,i)=>`<tr>${cols.map(c=>`<td>${c.fn(j,i)}</td>`).join('')}</tr>`).join('');
+  const total=jobs.reduce((s,j)=>s+(j.total||0),0);
+  $('printPreview').innerHTML=`
+    <style>@page{size:A4 portrait;margin:15mm 12mm;} body{font-family:'Kanit',sans-serif;}</style>
+    ${logoSrc?`<div style="text-align:center;margin-bottom:6px"><img src="${logoSrc}" style="height:36px"></div>`:''}
+    <div class="pr-title">ใบสรุปเบี้ยเลี้ยงพนักงาน</div>
+    <div class="pr-meta">บันทึกเมื่อ: ${fmtDate(d,true)} ${fmtTime(d)} &nbsp;|&nbsp; พิมพ์: ${fmtDate(now,false)} ${fmtTime(now)}${nameQ||tcQ||deptQ?' &nbsp;|&nbsp; filter: '+(nameQ||tcQ||deptQ):''}</div>
+    <table><thead>${hdrHtml}</thead><tbody>${bodyHtml}
+      <tr class="pr-total-row"><td colspan="${cols.length-1}" style="text-align:right">ยอดรวมทั้งหมด</td><td>฿${total.toLocaleString('th-TH')}</td></tr>
+    </tbody></table>
+    <div class="pr-sign-area">
+      <div class="pr-sign-box">ผู้จัดทำ<br><br><br>____________________</div>
+      <div class="pr-sign-box">ผู้ตรวจสอบ<br><br><br>____________________</div>
+      <div class="pr-sign-box">ผู้อนุมัติ<br><br><br>____________________</div>
+    </div>`;
+  closeHistPrintModal();
+  window.print();
 }
 function printSnapshot(hid){
   const h=payHistory.find(x=>x.id===hid); if(!h) return;
@@ -2526,24 +2621,47 @@ function renderPersonHistBody(empId){
 }
 
 // ── TAB 4 — ตารางประจำเดือน ──
+
+function deleteT4Item(source, jobId, itemIdx, histId, empId){
+  if(!confirm('ลบรายการนี้?')) return;
+  if(source==='cur'){
+    const j=jobList.find(x=>x.id===jobId);
+    if(!j) return;
+    j.items.splice(itemIdx,1);
+    recomputeJob(j.id);
+    j.total=j.items.length?calcJobTotal(j):null;
+    if(j.overnightDays!==undefined){
+      j.overnightDays=j.items.filter(i=>i.type==='overnight').reduce((s,i)=>s+(parseInt(i.days)||1),0);
+      j.nonOvernightDays=j.items.filter(i=>i.type==='non-overnight').length;
+    }
+  } else {
+    const h=payHistory.find(x=>x.id===histId);
+    if(!h) return;
+    const job=h.jobs.find(jj=>jj.empId===empId);
+    if(!job) return;
+    job.items.splice(itemIdx,1);
+  }
+  saveToStorage(); renderT4(); updateSummary();
+  showToast('ลบรายการเรียบร้อย','success');
+}
 function getT4Rows(){
   const rows=[];
   // From payHistory (saved records)
   payHistory.forEach(h=>{
     h.jobs.forEach(j=>{
-      (j.items||[]).forEach(item=>{
+      (j.items||[]).forEach((item,iIdx)=>{
         rows.push({fn:j.fn,ln:j.ln,tc:j.tc,dept:j.dept,
           overnightRate:+j.overnightRate||0,nonOvernightRate:+j.nonOvernightRate||0,
-          item,source:'hist'});
+          item,source:'hist',histId:h.id,empId:j.empId,itemIdx:iIdx});
       });
     });
   });
   // From current jobList (pending)
   jobList.forEach(j=>{
-    j.items.forEach(item=>{
+    j.items.forEach((item,iIdx)=>{
       rows.push({fn:j.fn,ln:j.ln,tc:j.tc,dept:j.dept,
         overnightRate:+j.overnightRate||0,nonOvernightRate:+j.nonOvernightRate||0,
-        item,source:'cur'});
+        item,source:'cur',jobId:j.id,itemIdx:iIdx});
     });
   });
   return rows;
@@ -2592,6 +2710,7 @@ function renderT4(){
     if(r.item.type==='overnight'&&!showOv) return false;
     if(r.item.type==='non-overnight'&&!showNon) return false;
     if(selNote&&(r.item.note||'').trim()!==selNote) return false;
+    if(searchQuery && !(r.fn+' '+r.ln).toLowerCase().includes(searchQuery)) return false;
     return true;
   });
   // Sort: group by note (empty last), then by date, then by name
@@ -2671,9 +2790,12 @@ function renderT4(){
       <td class="center">${isOv?`<span class="det-hist-badge ov">🌙 ค้างคืน</span>`:`<span class="det-hist-badge non">☀️ ไม่ค้างคืน</span>`}</td>
       <td class="center">${isOv?`${days} วัน · <strong style="color:var(--orange)">${nights} คืน</strong>`:'ไป-กลับ'}</td>
       <td class="center"><strong style="color:var(--accent2)">฿${base.toLocaleString('th-TH')}</strong></td>
+      <td class="center">${inc>0?`<span style="color:var(--green)">+฿${inc.toLocaleString('th-TH')}</span>`:`<span style="color:var(--muted)">—</span>`}</td>
+      <td class="center">${exp>0?`<span style="color:var(--red)">-฿${exp.toLocaleString('th-TH')}</span>`:`<span style="color:var(--muted)">—</span>`}</td>
       <td class="center">${otherCell}</td>
       <td class="center"><strong style="color:var(--green)">฿${net.toLocaleString('th-TH')}</strong></td>
       <td>${noteCell}</td>
+      <td class="center"><button onclick="deleteT4Item('${r.source}',${r.source==='cur'?r.jobId:0},${r.itemIdx},'${r.source==='hist'?r.histId:''}',${r.source==='hist'?r.empId:0})" style="border:none;background:#fef2f2;color:var(--red);border-radius:6px;padding:0.2rem 0.55rem;cursor:pointer;font-size:0.78rem;font-weight:600;border:1px solid #fecaca" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">🗑 ลบ</button></td>
     </tr>`;
   }).join('');
 }
