@@ -1981,8 +1981,8 @@ function renderT2(){
 
   let rows='';
   list.forEach((j,i)=>{
-    const totalDisp=j.total!==null?`<span style="font-weight:700;color:var(--green)">฿${j.total.toLocaleString('th-TH')}</span>`:'<span style="color:var(--muted)">—</span>';
-    const calcChip=j.suspended?`<span class="status-chip status-suspended">ระงับ</span>`:j.total!==null?`<span class="calc-chip">✓ อัตโนมัติ</span>`:`<span style="color:var(--muted);font-size:0.78rem">ยังไม่มีรายการ</span>`;
+    const totalDisp=j.total!=null?`<span style="font-weight:700;color:var(--green)">฿${j.total.toLocaleString('th-TH')}</span>`:'<span style="color:var(--muted)">—</span>';
+    const calcChip=j.suspended?`<span class="status-chip status-suspended">ระงับ</span>`:j.total!=null?`<span class="calc-chip">✓ อัตโนมัติ</span>`:`<span style="color:var(--muted);font-size:0.78rem">ยังไม่มีรายการ</span>`;
     const cbHtml=bulkMode2
       ?`<td class="center"><input type="checkbox" class="row-cb" ${selectedJobs.has(j.id)?'checked':''} onchange="toggleJobCheck(${j.id},this.checked)"></td>`
       :`<td class="td-idx">${i+1}</td>`;
