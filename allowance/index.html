@@ -866,6 +866,33 @@
 
     <!-- TAB 4 -->
     <div class="tab-pane" id="tab4">
+      <!-- Delete mode bar -->
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;flex-wrap:wrap">
+        <button id="t4DelBtn" onclick="t4EnterDeleteMode()"
+          style="padding:0.38rem 0.9rem;font-family:'Kanit',sans-serif;font-size:0.82rem;font-weight:600;border-radius:7px;cursor:pointer;background:#fef2f2;border:1.5px solid #fecaca;color:var(--red);transition:all 0.15s"
+          onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+          🗑 ลบรายการ
+        </button>
+        <div id="t4DelControls" style="display:none;align-items:center;gap:0.5rem;flex-wrap:wrap">
+          <span id="t4DelCount" style="font-size:0.82rem;font-weight:600;color:var(--red)">เลือก 0 แถว</span>
+          <button onclick="t4SelectAll(true)"
+            style="padding:0.28rem 0.7rem;font-family:'Kanit',sans-serif;font-size:0.78rem;border-radius:6px;cursor:pointer;background:#eff6ff;border:1px solid #bfdbfe;color:var(--accent)">
+            เลือกทั้งหมด
+          </button>
+          <button onclick="t4SelectAll(false)"
+            style="padding:0.28rem 0.7rem;font-family:'Kanit',sans-serif;font-size:0.78rem;border-radius:6px;cursor:pointer;background:#f8fafc;border:1px solid var(--border2);color:var(--muted)">
+            ยกเลิกการเลือก
+          </button>
+          <button onclick="t4ConfirmDelete()"
+            style="padding:0.32rem 0.85rem;font-family:'Kanit',sans-serif;font-size:0.82rem;font-weight:600;border-radius:7px;cursor:pointer;background:var(--red);border:none;color:#fff">
+            🗑 ลบที่เลือก
+          </button>
+          <button onclick="t4ExitDeleteMode()"
+            style="padding:0.28rem 0.7rem;font-family:'Kanit',sans-serif;font-size:0.78rem;border-radius:6px;cursor:pointer;background:#f8fafc;border:1px solid var(--border2);color:var(--muted)">
+            ✕ ยกเลิก
+          </button>
+        </div>
+      </div>
       <!-- Filter bar -->
       <div class="filter-bar" style="margin:0 -1.4rem 0;padding:0.65rem 1.4rem;flex-wrap:wrap;gap:0.5rem">
         <span class="filter-label">เดือน/ปี:</span>
@@ -908,7 +935,7 @@
             <th class="center">รายได้/จ่ายสุทธิ</th>
             <th class="center">ยอดสุทธิ</th>
             <th>หมายเหตุ</th>
-            <th class="center">ลบ</th>
+            <th class="center" id="t4DelChkHdr" style="display:none"><input type="checkbox" id="t4HdrChk" style="width:15px;height:15px;cursor:pointer" onclick="t4ToggleAll(this.checked)" title="เลือกทั้งหมด"></th>
           </tr></thead>
           <tbody id="t4Body"></tbody>
         </table>
@@ -2795,9 +2822,134 @@ function renderT4(){
       <td class="center">${otherCell}</td>
       <td class="center"><strong style="color:var(--green)">฿${net.toLocaleString('th-TH')}</strong></td>
       <td>${noteCell}</td>
-      <td class="center"><button onclick="deleteT4Item('${r.source}',${r.source==='cur'?r.jobId:0},${r.itemIdx},'${r.source==='hist'?r.histId:''}',${r.source==='hist'?r.empId:0})" style="border:none;background:#fef2f2;color:var(--red);border-radius:6px;padding:0.2rem 0.55rem;cursor:pointer;font-size:0.78rem;font-weight:600;border:1px solid #fecaca" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">🗑 ลบ</button></td>
+      <td class="center"><input type="checkbox" class="t4-del-cb" data-key="${r.source}|${r.source==='cur'?r.jobId:r.histId}|${r.empId||0}|${r.itemIdx}" style="display:none;width:16px;height:16px;cursor:pointer" onchange="t4UpdateDelCount()" onclick="event.stopPropagation()"></td>
     </tr>`;
   }).join('');
+  // Restore delete mode visuals after re-render
+  if(_t4DeleteMode){
+    document.querySelectorAll('.t4-del-cb').forEach(cb=>cb.style.display='inline-block');
+    const hdr=$('t4DelChkHdr'); if(hdr) hdr.style.display='';
+    $('t4DelBtn').style.display='none';
+    $('t4DelControls').style.display='flex';
+    t4UpdateDelCount();
+  }
+}
+
+// ── T4 PIN-Protected Delete Mode ──
+let _t4PinCallback = null;
+let _t4DeleteMode = false;
+const T4_PIN = '2525';
+
+function t4ShowPin(title, msg, onSuccess){
+  $('t4PinTitle').textContent = title;
+  $('t4PinMsg').textContent = msg;
+  $('t4PinInput').value = '';
+  $('t4PinError').style.display = 'none';
+  _t4PinCallback = onSuccess;
+  $('t4PinOverlay').classList.add('show');
+  setTimeout(()=>{ const el=$('t4PinInput'); if(el) el.focus(); }, 80);
+}
+
+function t4PinCancel(){
+  $('t4PinOverlay').classList.remove('show');
+  _t4PinCallback = null;
+}
+
+function t4PinSubmit(){
+  const pin = ($('t4PinInput').value||'').trim();
+  if(pin !== T4_PIN){
+    $('t4PinError').style.display = 'block';
+    $('t4PinInput').value = '';
+    $('t4PinInput').focus();
+    return;
+  }
+  $('t4PinOverlay').classList.remove('show');
+  const cb = _t4PinCallback;
+  _t4PinCallback = null;
+  if(cb) cb();
+}
+
+function t4EnterDeleteMode(){
+  t4ShowPin('🔐 ป้อนรหัสผ่าน', 'กรอกรหัส 4 หลักเพื่อเข้าโหมดลบรายการ', ()=>{
+    _t4DeleteMode = true;
+    document.querySelectorAll('.t4-del-cb').forEach(cb=>cb.style.display='inline-block');
+    const hdr=$('t4DelChkHdr'); if(hdr) hdr.style.display='';
+    $('t4DelBtn').style.display='none';
+    const ctrl=$('t4DelControls'); ctrl.style.display='flex';
+    t4UpdateDelCount();
+  });
+}
+
+function t4ExitDeleteMode(){
+  _t4DeleteMode = false;
+  document.querySelectorAll('.t4-del-cb').forEach(cb=>{ cb.style.display='none'; cb.checked=false; });
+  const hdr=$('t4DelChkHdr'); if(hdr){ hdr.style.display='none'; }
+  const allCb=$('t4HdrChk'); if(allCb) allCb.checked=false;
+  $('t4DelBtn').style.display='';
+  $('t4DelControls').style.display='none';
+  t4UpdateDelCount();
+}
+
+function t4UpdateDelCount(){
+  const cnt = document.querySelectorAll('.t4-del-cb:checked').length;
+  const el=$('t4DelCount'); if(el) el.textContent=`เลือก ${cnt} แถว`;
+}
+
+function t4SelectAll(val){
+  document.querySelectorAll('.t4-del-cb').forEach(cb=>cb.checked=val);
+  const allCb=$('t4HdrChk'); if(allCb) allCb.checked=val;
+  t4UpdateDelCount();
+}
+
+function t4ToggleAll(checked){ t4SelectAll(checked); }
+
+function t4ConfirmDelete(){
+  const checked=[...document.querySelectorAll('.t4-del-cb:checked')];
+  if(!checked.length){ showToast('กรุณาเลือกรายการที่ต้องการลบ','error'); return; }
+  t4ShowPin('🗑 ยืนยันการลบ', `ยืนยันลบ ${checked.length} รายการที่เลือก? ไม่สามารถย้อนกลับได้`, ()=>{
+    // Parse keys: source|id|empId|itemIdx
+    const toDelete = checked.map(cb=>{
+      const parts = cb.dataset.key.split('|');
+      return { source:parts[0], id:parts[1], empId:parts[2], itemIdx:parseInt(parts[3]) };
+    });
+    // Group by job (cur) or hist+empId (hist), collect indices per group
+    const curMap={}, histMap={};
+    toDelete.forEach(d=>{
+      if(d.source==='cur'){
+        if(!curMap[d.id]) curMap[d.id]=[];
+        curMap[d.id].push(d.itemIdx);
+      } else {
+        const hk=`${d.id}|||${d.empId}`;
+        if(!histMap[hk]) histMap[hk]=[];
+        histMap[hk].push(d.itemIdx);
+      }
+    });
+    // Delete cur items descending
+    Object.entries(curMap).forEach(([jobId,idxArr])=>{
+      const j=jobList.find(x=>x.id===jobId);
+      if(!j) return;
+      idxArr.sort((a,b)=>b-a);
+      idxArr.forEach(idx=>j.items.splice(idx,1));
+      recomputeJob(j.id);
+      j.total=j.items.length?calcJobTotal(j):null;
+    });
+    // Delete hist items descending
+    Object.entries(histMap).forEach(([hk,idxArr])=>{
+      const [histId, empId]=hk.split('|||');
+      const h=payHistory.find(x=>x.id===histId);
+      if(!h) return;
+      const job=h.jobs.find(jj=>jj.empId===empId);
+      if(!job) return;
+      idxArr.sort((a,b)=>b-a);
+      idxArr.forEach(idx=>job.items.splice(idx,1));
+    });
+    const total=toDelete.length;
+    saveToStorage();
+    t4ExitDeleteMode();
+    renderT4();
+    updateSummary();
+    showToast(`ลบ ${total} รายการเรียบร้อยแล้ว`,'success');
+  });
 }
 
 // ── Init ──
@@ -2807,5 +2959,24 @@ syncAllEmployeesToJobList();
 renderAll();
 syncFromFirebase();
 </script>
+
+<!-- T4 PIN Modal -->
+<div class="confirm-overlay" id="t4PinOverlay" onclick="if(event.target===this)t4PinCancel()">
+  <div class="confirm-box" style="max-width:330px">
+    <div class="confirm-icon">🔐</div>
+    <div class="confirm-title" id="t4PinTitle">ป้อนรหัสผ่าน</div>
+    <div class="confirm-msg" id="t4PinMsg">กรอกรหัส 4 หลักเพื่อดำเนินการต่อ</div>
+    <input type="password" id="t4PinInput" maxlength="10"
+      placeholder="••••"
+      onkeydown="if(event.key==='Enter')t4PinSubmit()"
+      style="width:100%;border:2px solid var(--border2);border-radius:8px;padding:0.65rem 1rem;font-family:'Kanit',sans-serif;font-size:1.4rem;text-align:center;letter-spacing:0.4em;margin-bottom:0.5rem;transition:border-color 0.15s;outline:none;"
+      onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+    <div id="t4PinError" style="display:none;color:var(--red);font-size:0.82rem;text-align:center;margin-bottom:0.85rem;font-weight:500">❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่</div>
+    <div class="confirm-actions" style="margin-top:0.5rem">
+      <button class="btn-cancel-modal" onclick="t4PinCancel()">ยกเลิก</button>
+      <button class="btn-confirm-del" onclick="t4PinSubmit()">✓ ยืนยัน</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
