@@ -2632,7 +2632,7 @@
 
   // ── filter state ──
   const f1 = { dept:'', tc:'', period:'', status:'', rateType:'', accType:'' };
-  const f2 = { dept:'', tc:'', period:'', rateType:'', calc:'', status:'' };
+  const f2 = { dept:'', tc:'', period:'', rateType:'', calc:'', status:'', search:'' };
 
   function applyF1() {
     f1.dept     = $('f1Dept').value;
@@ -2697,6 +2697,7 @@
 
   function filterJobList() {
     return jobList.filter(j => {
+      if (f2.search && !(j.fn+' '+j.ln).toLowerCase().includes(f2.search.toLowerCase())) return false;
       if (f2.dept     && j.dept     !== f2.dept)     return false;
       if (f2.tc       && j.tc       !== f2.tc)       return false;
       if (f2.period   && j.period   !== f2.period)   return false;
@@ -3193,8 +3194,12 @@
 
   function toggleExpand(jobId) {
     saveAllCurrentInputs();   // ← เซฟก่อนทำลาย DOM
-    if (expandedRows.has(jobId)) expandedRows.delete(jobId);
-    else expandedRows.add(jobId);
+    if (expandedRows.has(jobId)) {
+      expandedRows.delete(jobId);
+    } else {
+      expandedRows.clear(); // ปิดอันอื่นก่อน
+      expandedRows.add(jobId);
+    }
     renderT2();
   }
 
@@ -3247,7 +3252,7 @@
           </td>
           <td>
             <input class="t2-input" type="number" min="0" max="3500" step="1"
-              data-jid="${j.id}" data-field="advance" value="${j.advance > 0 ? j.advance : 3500}" placeholder="3500"
+              data-jid="${j.id}" data-field="advance" value="${j.advance}" placeholder="3500"
               style="width:90px"
               oninput="onJobInput(${j.id},'advance',this.value,3500)">
           </td>
@@ -4135,6 +4140,89 @@
   renderHistory();
   updateSummary();
   syncFromFirebase();
+</script>
+
+<!-- Floating Search Button -->
+<div id="floatSearch" style="
+  position:fixed; bottom:28px; right:28px; z-index:9999;
+  display:flex; align-items:center; gap:0; cursor:grab;
+  user-select:none; touch-action:none;
+">
+  <div id="floatSearchBox" style="
+    display:none; align-items:center; gap:0;
+    background:#fff; border:2px solid var(--accent);
+    border-radius:28px 0 0 28px; padding:0 4px 0 14px;
+    box-shadow:0 4px 20px rgba(29,78,216,0.18);
+    overflow:hidden;
+  ">
+    <input id="floatSearchInput" type="text" placeholder="ค้นหาชื่อ-นามสกุล…" autocomplete="off" style="
+      border:none; outline:none; font-family:'Kanit',sans-serif;
+      font-size:0.88rem; color:var(--text); width:200px;
+      background:transparent; padding:8px 4px;
+    " oninput="f2.search=this.value; renderT2();">
+    <button onclick="clearFloatSearch()" style="
+      background:none; border:none; cursor:pointer; color:var(--muted);
+      font-size:0.9rem; padding:4px 6px; line-height:1;
+    " title="ล้าง">✕</button>
+  </div>
+  <button id="floatSearchBtn" onclick="toggleFloatSearch(event)" style="
+    width:48px; height:48px; border-radius:50%; border:none;
+    background:var(--accent); color:#fff; font-size:1.25rem;
+    cursor:pointer; box-shadow:0 4px 16px rgba(29,78,216,0.35);
+    display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s, box-shadow 0.15s; flex-shrink:0;
+    font-family:inherit;
+  " title="ค้นหา">🔍</button>
+</div>
+
+<script>
+(function(){
+  const el = document.getElementById('floatSearch');
+  const btn = document.getElementById('floatSearchBtn');
+  const box = document.getElementById('floatSearchBox');
+  const inp = document.getElementById('floatSearchInput');
+  let dragging=false, ox=0, oy=0, moved=false;
+
+  el.addEventListener('pointerdown', e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON'&&e.target!==btn) return;
+    dragging=true; moved=false;
+    const r=el.getBoundingClientRect();
+    ox=e.clientX-r.left; oy=e.clientY-r.top;
+    el.style.cursor='grabbing';
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const x=e.clientX-ox, y=e.clientY-oy;
+    const mw=window.innerWidth-el.offsetWidth-4;
+    const mh=window.innerHeight-el.offsetHeight-4;
+    el.style.right='auto'; el.style.bottom='auto';
+    el.style.left=Math.max(4,Math.min(x,mw))+'px';
+    el.style.top =Math.max(4,Math.min(y,mh))+'px';
+    moved=true;
+  });
+  el.addEventListener('pointerup', ()=>{ dragging=false; el.style.cursor='grab'; });
+
+  window.toggleFloatSearch = function(e){
+    if(moved){ moved=false; return; }
+    const open = box.style.display==='flex';
+    if(open){
+      box.style.display='none';
+      btn.style.borderRadius='50%';
+      clearFloatSearch();
+    } else {
+      box.style.display='flex';
+      btn.style.borderRadius='0 50% 50% 0';
+      inp.focus();
+    }
+  };
+  window.clearFloatSearch = function(){
+    inp.value='';
+    if(typeof f2!=='undefined'){ f2.search=''; if(typeof renderT2==='function') renderT2(); }
+    box.style.display='none';
+    btn.style.borderRadius='50%';
+  };
+})();
 </script>
 
 </body>
