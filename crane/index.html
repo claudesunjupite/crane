@@ -2909,7 +2909,7 @@
     }
     // ไฮไลต์ช่องหมายเหตุถ้ายังไม่กรอกแต่มีจำนวนเงิน
     _highlightNoteFields(j);
-    saveToStorage();
+    tryAutoCalc(jobId);
   }
 
   function _highlightNoteFields(j) {
