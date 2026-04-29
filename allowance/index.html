@@ -1904,7 +1904,7 @@ function renderItemRow(j,item,isLocked,isCross){
             <span style="color:var(--muted);font-size:0.7rem">→</span>
             <input type="date" class="det-date det-date-end" data-jid="${j.id}" data-iid="${item.id}" value="${endDate}" min="${item.date||''}" onchange="onDetDateChange(${j.id},${item.id},'end',this.value)">
           </div>`
-        :`<input type="date" class="det-date" data-jid="${j.id}" data-iid="${item.id}" value="${item.date||''}">`
+        :`<input type="date" class="det-date" data-jid="${j.id}" data-iid="${item.id}" value="${item.date||''}" onchange="onDetDateChange(${j.id},${item.id},'start',this.value)">`
       }
     </div>
     <div class="det-ir-col" style="min-width:110px">
@@ -1934,7 +1934,7 @@ function renderItemRow(j,item,isLocked,isCross){
     </div>
     <div class="det-ir-col" style="flex:1.5;min-width:90px">
       <span class="det-ir-lbl">หมายเหตุ</span>
-      <input type="text" class="det-note det-note" data-jid="${j.id}" data-iid="${item.id}" data-field="note" placeholder="หมายเหตุ…" value="${item.note||''}">
+      <input type="text" class="det-note det-note" data-jid="${j.id}" data-iid="${item.id}" data-field="note" placeholder="หมายเหตุ…" value="${item.note||''}" oninput="onNoteInput(this,${j.id},${item.id},'note',null,null)">
     </div>
     <button class="btn-rem-item" style="align-self:flex-end;margin-bottom:2px" onclick="removeItem(${j.id},${item.id})">✕</button>
   </div>`;
@@ -2376,7 +2376,7 @@ function openGroupModal(){
   $('groupOverlay').classList.add('show');
 }
 function closeGroupModal(){ $('groupOverlay').classList.remove('show'); }
-$('groupOverlay').addEventListener('click',e=>{ if(e.target===$('groupOverlay')) closeGroupModal(); });
+// groupOverlay ปิดได้เฉพาะปุ่ม ✕ และ ยกเลิก เท่านั้น
 
 // Master date config
 function syncGMasterUI(){
