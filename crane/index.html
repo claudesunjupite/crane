@@ -2038,7 +2038,14 @@
             <tr>
               <th class="center" style="width:50px"></th>
               <th>ชื่อ-นามสกุล</th>
-              <th>งวด</th>
+              <th>
+                งวด
+                <select id="bulkPeriodSelect" style="display:block;margin-top:4px;width:100%;border:1.5px solid var(--border2);border-radius:6px;padding:0.2rem 0.4rem;font-family:inherit;font-size:0.72rem;background:#fff;color:var(--text2);cursor:pointer" onchange="setAllPeriod(this.value)">
+                  <option value="">— ตั้งทุกคน —</option>
+                  <option value="รอบ 15">รอบ 15</option>
+                  <option value="รอบ 30">รอบ 30</option>
+                </select>
+              </th>
               <th>เงินที่เบิกไป (≤฿3,500)</th>
               <th>จำนวนวัน</th>
               <th>จำนวน OT (ชม.)</th>
@@ -2784,10 +2791,52 @@
     if (!j) return;
     saveAllCurrentInputs();
     j.period = val;
-    j.basePay = null; j.otPay = null; j.total = null;
-    renderT2();
+    tryAutoCalc(jobId);
+  }
+  function setAllPeriod(val) {
+    if (!val) return;
+    saveAllCurrentInputs();
+    jobList.forEach(j => { j.period = val; });
+    const sel = document.getElementById('bulkPeriodSelect');
+    if (sel) sel.value = '';
+    tryAutoCalcAll();
+  }
+
+  // ─────────────────────────────────────────
+  // Auto-calculate (silent — ไม่แสดง toast ถ้าข้อมูลยังไม่ครบ)
+  // ─────────────────────────────────────────
+  const pendHtml = `<span class="sal-pend">—</span>`;
+  function tryAutoCalc(jobId) {
+    const j = jobList.find(x => x.id === jobId);
+    if (!j || j.suspended) return;
+    readInputs(j);
+    const err = validateJob(j);
+    if (!err) {
+      calcJob(j);
+    } else {
+      j.total = null; j.basePay = null; j.otPay = null;
+    }
+    // อัปเดต cell ยอดรวม
+    const salEl = document.getElementById(`salTotal_${j.id}`);
+    if (salEl) salEl.innerHTML = j.total !== null ? fmt(j.total) : pendHtml;
+    // อัปเดตปุ่มคำนวณ
+    const btnEl = document.getElementById(`calcBtn_${j.id}`);
+    if (btnEl) btnEl.innerHTML = j.total !== null
+      ? `<button class="btn-calc done" onclick="calcOne(${j.id})">✓ คำนวณแล้ว</button>`
+      : `<button class="btn-calc" onclick="calcOne(${j.id})">💰 คิดเงินเดือนรวม</button>`;
     updateSummary();
     saveToStorage();
+  }
+  function tryAutoCalcAll() {
+    jobList.forEach(j => {
+      if (j.suspended) return;
+      readInputs(j);
+      if (!validateJob(j)) calcJob(j);
+      else { j.total = null; j.basePay = null; j.otPay = null; }
+    });
+    updateSummary();
+    saveToStorage();
+    renderT2();
   }
 
   // บันทึกค่า field ทันทีที่พิมพ์ (สำหรับ input ที่อยู่ใน detail panel)
@@ -2799,7 +2848,12 @@
     if (field === 'otherIncomeNote' || field === 'otherExpenseNote') {
       _highlightNoteFields(j);
     }
-    saveToStorage();
+    // auto-calc เมื่อกรอก field ที่ validate ต้องการ
+    if (['clientCompany','tcNum','unitName','otherIncomeNote','otherExpenseNote'].includes(field)) {
+      tryAutoCalc(jobId);
+    } else {
+      saveToStorage();
+    }
   }
 
   function saveJobField(jobId, field, rawVal) {
@@ -3102,7 +3156,7 @@
       el.title = '';
     }
     const j = jobList.find(x => x.id === jobId);
-    if (j) { j[field] = v; saveToStorage(); }
+    if (j) { j[field] = v; tryAutoCalc(jobId); }
   }
 
   // เซฟค่า input ทุกตัวที่มองเห็นอยู่ใน DOM ก่อน re-render (fallback)
@@ -3203,8 +3257,8 @@
               value="${j.unitName || ''}" style="width:100px"
               oninput="saveJobText(${j.id},'unitName',this.value)">
           </td>
-          <td class="sal-total">${j.total !== null ? fmt(j.total) : pend}</td>
-          <td class="center">${calcBtn}</td>
+          <td class="sal-total" id="salTotal_${j.id}">${j.total !== null ? fmt(j.total) : pend}</td>
+          <td class="center" id="calcBtn_${j.id}">${calcBtn}</td>
         </tr>`;
 
       const detailRow = isOpen ? `
