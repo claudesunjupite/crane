@@ -2363,7 +2363,7 @@
       if (!raw) return;
       const data = JSON.parse(raw);
       employees  = (data.employees  || []).map(e => ({ useSharedAccount: false, ...e }));
-      jobList    = (data.jobList    || []).map(j => ({ suspended: false, useSharedAccount: false, clientCompany: '', ...j }));
+      jobList    = (data.jobList    || []).map(j => ({ suspended: false, useSharedAccount: false, clientCompany: '', ...j, advance: j.advance > 0 ? j.advance : 3500 }));
       uid        = data.uid        || 1;
       payHistory = (data.payHistory || []).map(h => ({
         ...h,
