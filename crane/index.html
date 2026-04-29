@@ -1305,6 +1305,18 @@
       transition: all 0.15s;
     }
     .hist-del:hover { background: #fef2f2; border-color: #fecaca; color: var(--red); }
+    .hist-restore {
+      padding: 0.22rem 0.65rem;
+      font-size: 0.72rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 5px;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .hist-restore:hover { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
 
     .hist-export {
       padding: 0.22rem 0.55rem;
@@ -3417,6 +3429,70 @@
     renderHistory();
   }
 
+  function confirmRestoreHistory(hid) {
+    const h = payHistory.find(x => x.hid === hid); if (!h) return;
+    const d = fmtDate(h.timestamp) + ' ' + fmtTime(h.timestamp);
+    showConfirmModal({
+      icon: '↩',
+      title: 'โหลดข้อมูลกลับ',
+      msg: `โหลดข้อมูล <strong>${h.jobs.length} คน</strong> จาก <strong>${d}</strong> กลับเข้าหน้าคนขับที่ใช้งาน?<br><span style="color:var(--muted);font-size:0.82rem">ค่าที่จะถูกโหลดกลับ: งวด / วัน / OT / เงินเบิก / บริษัท / TC / หน่วยงาน<br>ยอดจะถูก reset ให้คำนวณใหม่</span>`,
+      okLabel: '↩ โหลดกลับ',
+      okClass: 'btn-save-edit'
+    }, () => restoreFromHistory(hid));
+  }
+
+  function restoreFromHistory(hid) {
+    const h = payHistory.find(x => x.hid === hid); if (!h) return;
+    let restored = 0, added = 0;
+    h.jobs.forEach(snapJob => {
+      // หาใน jobList ปัจจุบันโดย empId
+      let job = jobList.find(j => j.empId === snapJob.empId);
+      if (!job) {
+        // ถ้าไม่อยู่ใน jobList — ดูว่า employee ยังมีอยู่ไหม
+        const emp = employees.find(e => e.id === snapJob.empId);
+        if (emp) {
+          emp.inJob = true;
+          job = {
+            id: uid++, empId: emp.id, fn: emp.fn, ln: emp.ln,
+            acc: emp.useSharedAccount ? SHARED_ACC : emp.acc,
+            bank: emp.useSharedAccount ? SHARED_BANK : emp.bank,
+            useSharedAccount: emp.useSharedAccount || false,
+            dept: emp.dept, tc: emp.tc, rateType: emp.rateType,
+            rate: emp.rate, otRate: emp.otRate,
+            wDays: 0, otH: 0, advance: 3500, tcNum: '', unitName: '',
+            clientCompany: '', otherIncome: 0, otherIncomeNote: '',
+            otherExpense: 0, otherExpenseNote: '',
+            basePay: null, otPay: null, total: null, suspended: false
+          };
+          jobList.push(job);
+          added++;
+        } else return; // employee ถูกลบไปแล้ว ข้าม
+      }
+      // โหลดค่ากลับ — reset total ให้คำนวณใหม่
+      job.period        = snapJob.period        || '';
+      job.wDays         = snapJob.wDays         || 0;
+      job.otH           = snapJob.otH           || 0;
+      job.advance       = snapJob.advance       > 0 ? snapJob.advance : 3500;
+      job.clientCompany = snapJob.clientCompany || '';
+      job.tcNum         = snapJob.tcNum         || '';
+      job.unitName      = snapJob.unitName      || '';
+      job.otherIncome      = snapJob.otherIncome      || 0;
+      job.otherIncomeNote  = snapJob.otherIncomeNote  || '';
+      job.otherExpense     = snapJob.otherExpense     || 0;
+      job.otherExpenseNote = snapJob.otherExpenseNote || '';
+      job.basePay = null; job.otPay = null; job.total = null;
+      // ลอง auto-calc ถ้าครบเงื่อนไข
+      if (!validateJob(job)) calcJob(job);
+      restored++;
+    });
+    renderT1(); renderT2(); updateSummary(); saveToStorage();
+    switchTab(2);
+    const msg = added > 0
+      ? `โหลดกลับ ${restored} คน (เพิ่มใหม่ ${added} คน) เรียบร้อย`
+      : `โหลดกลับ ${restored} คน เรียบร้อย`;
+    showToast(msg, 'success');
+  }
+
   function deleteHistory(hid) {
     payHistory = payHistory.filter(h => h.hid !== hid);
     expandedHist.delete(hid);
@@ -3534,6 +3610,7 @@
             <span class="hist-total">${fmt(grandTotal)}</span>
             <button class="hist-export" onclick="event.stopPropagation(); exportSnapshotCSV(${h.hid})" title="Export ชุดนี้เป็น CSV">↓ CSV</button>
             <button class="hist-print"  onclick="event.stopPropagation(); printSnapshot(${h.hid})" title="พิมพ์ประวัตินี้">🖨 พิมพ์</button>
+            <button class="hist-restore" onclick="event.stopPropagation(); confirmRestoreHistory(${h.hid})" title="โหลดข้อมูลกลับไปแก้ไข">↩ โหลดกลับ</button>
             <button class="hist-del"    onclick="event.stopPropagation(); confirmDelete('ประวัติ ${dateStr} ${timeStr}', () => deleteHistory(${h.hid}))">✕</button>
           </div>
           ${detailTable}
