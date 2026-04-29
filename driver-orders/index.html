@@ -82,6 +82,12 @@
     .num-inp{width:100px;border:1px solid var(--border2);border-radius:6px;padding:.22rem .45rem;font-family:'Kanit',sans-serif;font-size:.83rem;text-align:right;background:#fff;transition:border-color .15s}
     .num-inp:focus{outline:none;border-color:var(--accent)}
     .num-inp::placeholder{color:var(--border2);font-size:.75rem}
+    /* Print driver grid */
+    .print-drv-grid{display:grid;grid-template-columns:1fr 1fr;gap:.32rem;max-height:180px;overflow-y:auto;padding-right:2px}
+    .print-drv-item{display:flex;align-items:center;gap:.5rem;background:#f8fafc;border:1.5px solid var(--border);border-radius:7px;padding:.38rem .65rem;cursor:pointer;transition:all .15s;font-size:.83rem;font-weight:500}
+    .print-drv-item:hover{border-color:var(--accent);background:#eff6ff}
+    .print-drv-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+    .print-drv-item.checked{border-color:var(--accent);background:#eff6ff}
     /* Inline route text input */
     .route-inp{border:none;border-bottom:1.5px solid var(--border2);border-radius:0;padding:.15rem .2rem;font-family:'Kanit',sans-serif;font-size:.8rem;color:var(--text);background:transparent;width:100%;transition:border-color .15s;min-width:60px}
     .route-inp:focus{outline:none;border-bottom-color:var(--accent);background:#f0f6ff}
@@ -178,7 +184,7 @@
     <p>Driver Work Order &amp; Invoice System</p>
   </div>
   <div class="header-right">
-    <span id="syncChip" class="sync-chip sync-off">☁️ —</span>
+    <span id="syncChip" class="sync-chip sync-off" onclick="syncFromFirebase()" title="คลิกเพื่อซิงค์" style="cursor:pointer">☁️ —</span>
     <a href="../index.html" class="btn-home">🏠 หน้าหลัก</a>
   </div>
 </header>
@@ -435,6 +441,18 @@
           </div>
         </label>
       </div>
+      <!-- Driver filter -->
+      <div style="display:flex;flex-direction:column;gap:.45rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem">
+          <div style="font-size:.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em">👤 เลือกคนขับที่จะพิมพ์</div>
+          <div style="display:flex;gap:.35rem">
+            <button class="btn btn-sm btn-secondary" onclick="selectAllPrintDrivers(true)">เลือกทั้งหมด</button>
+            <button class="btn btn-sm btn-secondary" onclick="selectAllPrintDrivers(false)">ล้างทั้งหมด</button>
+          </div>
+        </div>
+        <div id="printDriverGrid" class="print-drv-grid"></div>
+        <div id="printDriverNone" style="display:none;font-size:.8rem;color:var(--muted);text-align:center;padding:.5rem">ไม่มีคนขับในช่วงนี้</div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-secondary" onclick="closeModal('calPrintOverlay')">ยกเลิก</button>
@@ -565,8 +583,10 @@ function saveToStorage(){
     const data={drivers,trucks,entries};
     localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
     setSyncStatus('syncing');
-    _fbDb.ref(_fbPath).set(data).then(()=>setSyncStatus('ok')).catch(e=>{console.warn(e);setSyncStatus('error');});
-  }catch(e){}
+    _fbDb.ref(_fbPath).set(data)
+      .then(()=>setSyncStatus('ok'))
+      .catch(e=>{ console.warn('Firebase save error:',e.message||e); setSyncStatus('error'); });
+  }catch(e){ console.warn('saveToStorage error:',e); }
 }
 
 function loadFromStorage(){
@@ -591,10 +611,14 @@ async function syncFromFirebase(){
       trucks=d.trucks||[];
       entries=(d.entries||[]).map(x=>({fare:0,trip:0,...x}));
       localStorage.setItem(STORAGE_KEY,JSON.stringify(d));
-      renderAll();
     }
     setSyncStatus('ok');
-  }catch(e){console.warn(e);setSyncStatus('error');}
+    // render AFTER status set — keeps render errors separate from firebase errors
+    try{ renderAll(); }catch(re){ console.warn('renderAll error after sync:',re); }
+  }catch(e){
+    console.warn('Firebase sync error:',e.message||e);
+    setSyncStatus('error');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1181,6 +1205,43 @@ function updatePrintModeUI(){
   $('pmDateRange').style.display=mode==='summary'?'flex':'none';
 }
 
+function renderPrintDriverGrid(){
+  const grid=$('printDriverGrid');
+  const none=$('printDriverNone');
+  // drivers who have at least one entry
+  const activeIds=new Set(entries.map(e=>e.driverId));
+  const list=drivers.filter(d=>activeIds.has(d.id));
+  if(!list.length){ grid.innerHTML=''; none.style.display='block'; return; }
+  none.style.display='none';
+  grid.innerHTML=list.map(d=>`
+    <label class="print-drv-item" id="pdrvLbl_${d.id}">
+      <input type="checkbox" id="pdrv_${d.id}" checked onchange="togglePrintDrvLabel('${d.id}')">
+      <span>${d.nickname} ${d.fn}</span>
+    </label>`).join('');
+  // mark all checked initially
+  list.forEach(d=>{ const lbl=document.getElementById(`pdrvLbl_${d.id}`); if(lbl) lbl.classList.add('checked'); });
+}
+function togglePrintDrvLabel(id){
+  const cb=document.getElementById(`pdrv_${id}`);
+  const lbl=document.getElementById(`pdrvLbl_${id}`);
+  if(lbl) lbl.classList.toggle('checked', cb?.checked);
+}
+function selectAllPrintDrivers(val){
+  document.querySelectorAll('#printDriverGrid input[type=checkbox]').forEach(cb=>{
+    cb.checked=val;
+    const id=cb.id.replace('pdrv_','');
+    const lbl=document.getElementById(`pdrvLbl_${id}`);
+    if(lbl) lbl.classList.toggle('checked',val);
+  });
+}
+function getSelectedPrintDriverIds(){
+  const ids=new Set();
+  document.querySelectorAll('#printDriverGrid input[type=checkbox]:checked').forEach(cb=>{
+    ids.add(cb.id.replace('pdrv_',''));
+  });
+  return ids;
+}
+
 function showCalPrintModal(){
   $('calPrintMonthLabel').textContent=`เดือน: ${THAI_MONTHS_FULL[calMonth]} พ.ศ. ${calYear+543}`;
   // Default date range = first → last day of current calendar month
@@ -1193,6 +1254,7 @@ function showCalPrintModal(){
   const radios=document.querySelectorAll('input[name="printMode"]');
   radios.forEach(r=>r.checked=r.value==='summary');
   updatePrintModeUI();
+  renderPrintDriverGrid();
   $('calPrintOverlay').classList.add('show');
 }
 
@@ -1201,6 +1263,8 @@ function doCalPrint(){
   const customer=($('p_customer')?.value||'').trim();
   const addr=($('p_addr')?.value||'').trim();
   const docno=($('p_docno')?.value||'').trim();
+  const selDrivers=getSelectedPrintDriverIds();
+  if(selDrivers.size===0){ showToast('กรุณาเลือกคนขับอย่างน้อย 1 คน','error'); return; }
 
   // ── สรุปรายวัน (รวมรอบ) ──
   if(mode==='summary'){
@@ -1208,7 +1272,7 @@ function doCalPrint(){
     const dateTo=($('p_dateTo')?.value||'').trim();
     if(!dateFrom||!dateTo){ showToast('กรุณาเลือกช่วงวันที่','error'); return; }
     if(dateFrom>dateTo){ showToast('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด','error'); return; }
-    const rangeEntries=[...entries].filter(e=>e.date&&e.date>=dateFrom&&e.date<=dateTo).sort((a,b)=>a.date.localeCompare(b.date));
+    const rangeEntries=[...entries].filter(e=>e.date&&e.date>=dateFrom&&e.date<=dateTo&&selDrivers.has(e.driverId)).sort((a,b)=>a.date.localeCompare(b.date));
     if(!rangeEntries.length){ showToast('ไม่มีข้อมูลในช่วงวันที่นี้','error'); return; }
     closeModal('calPrintOverlay');
 
@@ -1296,7 +1360,7 @@ function doCalPrint(){
 
   // ── existing month-based modes ──
   const monthStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
-  const monthEntries=[...entries].filter(e=>e.date&&e.date.startsWith(monthStr)).sort((a,b)=>a.date.localeCompare(b.date));
+  const monthEntries=[...entries].filter(e=>e.date&&e.date.startsWith(monthStr)&&selDrivers.has(e.driverId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!monthEntries.length){ showToast('ไม่มีข้อมูลในเดือนนี้','error'); return; }
   closeModal('calPrintOverlay');
 
