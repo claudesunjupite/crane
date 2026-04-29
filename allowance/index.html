@@ -1044,7 +1044,7 @@ const PRINT_COLS = [
   { key:'nonDays',  label:'วันไม่ค้างคืน',        def:true,  fn:j=>j.nonOvernightDays||0 },
   { key:'nonRate',  label:'เบี้ยไม่ค้างคืน/วัน', def:false, fn:j=>`฿${(+j.nonOvernightRate||0).toLocaleString('th-TH')}` },
   { key:'nonAmt',   label:'ยอดไม่ค้างคืน',       def:true,  fn:j=>`฿${((j.nonOvernightDays||0)*(+j.nonOvernightRate||0)).toLocaleString('th-TH')}` },
-  { key:'total',    label:'ยอดสุทธิ',             def:true,  fn:j=>j.total!==null?`฿${j.total.toLocaleString('th-TH')}`:'—' },
+  { key:'total',    label:'ยอดสุทธิ',             def:true,  fn:j=>j.total!=null?`฿${j.total.toLocaleString('th-TH')}`:'—' },
   { key:'status',   label:'สถานะ',                def:true,  fn:j=>j.suspended?'ถูกระงับ':'ปกติ' },
 ];
 
