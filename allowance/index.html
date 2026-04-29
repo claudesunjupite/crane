@@ -303,6 +303,12 @@
     .gtbl-head{background:#f8fafc;font-size:0.72rem;font-weight:600;color:var(--text2);padding:0.32rem 0.65rem;}
     .gtbl-body>.gtbl-row{background:#fff;}
     .gtbl-body>.gtbl-row:hover{background:#fafbff;}
+    .gtbl-emp-block>.gtbl-row{background:#fff;}
+    .gtbl-emp-block:hover>.gtbl-row,.gtbl-emp-block:hover>.gtbl-emp-note-row{background:#fafbff;}
+    .gtbl-emp-note-row{padding:.18rem .65rem .28rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.45rem;}
+    .gtbl-emp-block:last-child>.gtbl-emp-note-row{border-bottom:none;}
+    .gtbl-note-inp{border:1.5px solid var(--border2);border-radius:5px;padding:.2rem .5rem;font-family:'Kanit',sans-serif;font-size:.73rem;color:var(--text);width:100%;transition:border-color .15s;background:#fff;}
+    .gtbl-note-inp:focus{outline:none;border-color:var(--accent);}
     .gtbl-name{font-size:0.82rem;font-weight:600;color:var(--text);line-height:1.3;}
     .gtbl-tc{font-size:0.74rem;color:var(--muted);}
     .gtbl-date-inp{border:1.5px solid var(--border2);border-radius:5px;padding:0.25rem 0.35rem;font-family:'Kanit',sans-serif;font-size:0.75rem;color:var(--text);background:#fff;min-width:100px;max-width:112px;}
@@ -2454,7 +2460,12 @@ function renderGroupEmpList(){
 function toggleGroupEmp(id,checked){
   if(checked){
     groupSelEmps.add(id);
-    if(!groupEmpOverrides.has(id)) groupEmpOverrides.set(id,{...groupConfig});
+    if(!groupEmpOverrides.has(id)){
+      const cfg={...groupConfig};
+      const emp=employees.find(e=>e.id===id);
+      cfg.note=genGroupNote(emp,cfg);
+      groupEmpOverrides.set(id,cfg);
+    }
   } else {
     groupSelEmps.delete(id);
     groupEmpOverrides.delete(id);
@@ -2471,7 +2482,14 @@ function groupSelectAll(){
   let list=employees.filter(e=>!e.suspended);
   if(q) list=list.filter(e=>(e.fn+e.ln).toLowerCase().replace(/\s+/g,'').includes(q));
   if(tcFilters.length) list=list.filter(e=>tcFilters.includes(e.tc));
-  list.forEach(e=>{ groupSelEmps.add(e.id); if(!groupEmpOverrides.has(e.id)) groupEmpOverrides.set(e.id,{...groupConfig}); });
+  list.forEach(e=>{
+    groupSelEmps.add(e.id);
+    if(!groupEmpOverrides.has(e.id)){
+      const cfg={...groupConfig};
+      cfg.note=genGroupNote(e,cfg);
+      groupEmpOverrides.set(e.id,cfg);
+    }
+  });
   renderGroupEmpList(); renderGroupTable();
 }
 function groupClearAll(){
@@ -2482,6 +2500,26 @@ function updateGroupCount(){
   const n=groupSelEmps.size;
   if($('groupSelCount')) $('groupSelCount').textContent=n;
   if($('groupSelCountFoot')) $('groupSelCountFoot').textContent=n;
+}
+
+function genGroupNote(emp, cfg){
+  const isOvn=(cfg.type||'overnight')==='overnight';
+  if(!isOvn){
+    const rate=+(emp?.nonOvernightRate||0);
+    return `ไป-กลับ 1 วันๆละ ${rate} บาท ทำงานเสร็จ เดินทางกลับบริษัท`;
+  }
+  const sd=cfg.startDate?fmtDateShort(cfg.startDate):'—';
+  const ed=(cfg.endDate||cfg.startDate)?fmtDateShort(cfg.endDate||cfg.startDate):'—';
+  const ovnRate=+(emp?.overnightRate||0);
+  const dayRate=+(emp?.nonOvernightRate||0);
+  return `ทำงานวันที่ ${sd} เดินทางกลับวันที่ ${ed} คืนละ ${ovnRate} กลับ ${dayRate}`;
+}
+
+function saveGTableNote(empId, val){
+  const cfg=groupEmpOverrides.get(empId); if(!cfg) return;
+  cfg.note=val;
+  cfg._noteManual=true;
+  groupEmpOverrides.set(empId,cfg);
 }
 
 function renderGroupTable(){
@@ -2509,16 +2547,24 @@ function renderGroupTable(){
         </div>
         <div style="font-size:0.68rem;color:var(--orange);margin-top:2px;font-weight:500">${days} วัน · ${nights} คืน</div>`
       :`<input type="date" value="${cfg.startDate||''}" onchange="saveGTableRow(${e.id},'startDate',this.value)" class="gtbl-date-inp">`;
+    const noteVal=(cfg._noteManual&&cfg.note!==undefined)?cfg.note:genGroupNote(e,cfg);
+    const noteEsc=noteVal.replace(/"/g,'&quot;');
     return `
-      <div class="gtbl-row">
-        <span class="gtbl-name">${e.fn} ${e.ln}</span>
-        <span class="gtbl-tc">${e.tc||'—'}</span>
-        <div>${dateHtml}</div>
-        <select onchange="saveGTableRow(${e.id},'type',this.value)" class="gtbl-type-sel">
-          <option value="overnight"${isOvn?' selected':''}>🌙 ค้างคืน</option>
-          <option value="non-overnight"${!isOvn?' selected':''}>☀️ ไม่ค้างคืน</option>
-        </select>
-        <button onclick="removeFromGroupTable(${e.id})" class="btn-rem-item" style="flex-shrink:0">✕</button>
+      <div class="gtbl-emp-block">
+        <div class="gtbl-row">
+          <span class="gtbl-name">${e.fn} ${e.ln}</span>
+          <span class="gtbl-tc">${e.tc||'—'}</span>
+          <div>${dateHtml}</div>
+          <select onchange="saveGTableRow(${e.id},'type',this.value)" class="gtbl-type-sel">
+            <option value="overnight"${isOvn?' selected':''}>🌙 ค้างคืน</option>
+            <option value="non-overnight"${!isOvn?' selected':''}>☀️ ไม่ค้างคืน</option>
+          </select>
+          <button onclick="removeFromGroupTable(${e.id})" class="btn-rem-item" style="flex-shrink:0">✕</button>
+        </div>
+        <div class="gtbl-emp-note-row">
+          <span style="font-size:.68rem;font-weight:600;color:var(--muted);white-space:nowrap;flex-shrink:0">📝</span>
+          <input type="text" class="gtbl-note-inp" value="${noteEsc}" placeholder="หมายเหตุ…" oninput="saveGTableNote(${e.id},this.value)">
+        </div>
       </div>`;
   }).join('');
   $('groupTableBody').innerHTML=`
@@ -2551,6 +2597,11 @@ function saveGTableRow(empId,field,val){
       cfg.days=Math.max(1,Math.round((d2-d1)/86400000)+1);
     }
   }
+  // Auto-regenerate note if not manually edited
+  if(!cfg._noteManual){
+    const emp=employees.find(x=>x.id===empId);
+    cfg.note=genGroupNote(emp,cfg);
+  }
   groupEmpOverrides.set(empId,cfg);
   renderGroupTable();
 }
@@ -2562,11 +2613,6 @@ function removeFromGroupTable(empId){
 function submitGroupAdd(){
   if(!groupSelEmps.size){ showToast('กรุณาเลือกพนักงานอย่างน้อย 1 คน','warning'); return; }
   const groupName=($('gGroupName')?.value||'').trim();
-  if(!groupName){
-    const inp=$('gGroupName');
-    if(inp){ inp.style.borderColor='var(--red)'; inp.focus(); setTimeout(()=>inp.style.borderColor='',2000); }
-    showToast('กรุณากรอกหมายเหตุก่อน','warning'); return;
-  }
   const noDate=[...groupSelEmps].filter(id=>!(groupEmpOverrides.get(id)||groupConfig).startDate);
   if(noDate.length){ showToast('กรุณาเลือกวันที่ให้ครบทุกคน','warning'); return; }
   let addedDates=0;
@@ -2583,7 +2629,8 @@ function submitGroupAdd(){
         items:[], overnightDays:0, nonOvernightDays:0, period:'', total:null, suspended:false, lockedMonths:[] };
       jobList.push(job);
     }
-    job.items.push({ id:uid(), date:cfg.startDate, endDate:cfg.endDate||cfg.startDate, type:cfg.type||'overnight', days:cfg.days||1, note:groupName, otherIncome:0, otherIncomeNote:'', otherExpense:0, otherExpenseNote:'' });
+    const itemNote=(cfg.note!==undefined&&cfg.note!==null)?cfg.note:genGroupNote(emp,cfg);
+    job.items.push({ id:uid(), date:cfg.startDate, endDate:cfg.endDate||cfg.startDate, type:cfg.type||'overnight', days:cfg.days||1, note:itemNote, otherIncome:0, otherIncomeNote:'', otherExpense:0, otherExpenseNote:'' });
     recomputeJob(job.id);
     job.total=job.items.length?calcJobTotal(job):null;
     expandedRows.add(job.id);

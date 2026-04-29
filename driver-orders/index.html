@@ -925,9 +925,23 @@ function showAddOrderModal(){
   $('addOrderOverlay').classList.add('show');
 }
 
+function captureOrderRows(){
+  _orderRows.forEach(row=>{
+    row._driverId = $('or_drv_'+row.id)?.value||'';
+    row._truckId  = $('or_trk_'+row.id)?.value||'';
+    row._from     = $('or_from_'+row.id)?.value||'';
+    row._to       = $('or_to_'+row.id)?.value||'';
+    row._round    = !!$('or_round_'+row.id)?.checked;
+  });
+}
+
 function renderOrderRows(){
   const container=$('orderRowsContainer');
-  container.innerHTML=_orderRows.map((row,idx)=>`
+  container.innerHTML=_orderRows.map((row,idx)=>{
+    const fromVal=(row._from||'').replace(/"/g,'&quot;');
+    const toVal=(row._to||'').replace(/"/g,'&quot;');
+    const drvOpts=drivers.map(d=>`<option value="${d.id}"${d.id===row._driverId?' selected':''}>${d.nickname} - ${d.fn} ${d.ln}</option>`).join('');
+    return `
     <div class="order-row">
       <div class="order-row-head">
         <span>📦 รายการที่ ${idx+1}</span>
@@ -938,7 +952,7 @@ function renderOrderRows(){
           <label class="lbl">พนักงานขับ *</label>
           <select class="inp" id="or_drv_${row.id}" onchange="onOrderDriverChange('${row.id}',this)">
             <option value="">เลือกพนักงาน…</option>
-            ${drivers.map(d=>`<option value="${d.id}">${d.nickname} - ${d.fn} ${d.ln}</option>`).join('')}
+            ${drvOpts}
           </select>
         </div>
         <div class="form-group">
@@ -951,18 +965,27 @@ function renderOrderRows(){
       <div class="form-row">
         <div class="form-group">
           <label class="lbl">ต้นทาง</label>
-          <input class="inp" id="or_from_${row.id}" placeholder="สถานที่ต้นทาง…">
+          <input class="inp" id="or_from_${row.id}" value="${fromVal}" placeholder="สถานที่ต้นทาง…">
         </div>
         <div class="form-group">
           <label class="lbl">ปลายทาง</label>
-          <input class="inp" id="or_to_${row.id}" placeholder="สถานที่ปลายทาง…">
+          <input class="inp" id="or_to_${row.id}" value="${toVal}" placeholder="สถานที่ปลายทาง…">
         </div>
       </div>
       <label style="display:inline-flex;align-items:center;gap:.45rem;font-size:.83rem;font-weight:500;color:var(--text2);cursor:pointer;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:7px;padding:.3rem .75rem;width:fit-content">
-        <input type="checkbox" id="or_round_${row.id}" style="width:14px;height:14px;accent-color:var(--orange);cursor:pointer">
+        <input type="checkbox" id="or_round_${row.id}" ${row._round?'checked':''} style="width:14px;height:14px;accent-color:var(--orange);cursor:pointer">
         🔁 เที่ยวร่อง
       </label>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+
+  // Restore truck dropdowns for rows that already have a driver selected
+  _orderRows.forEach(row=>{
+    if(row._driverId){
+      onOrderDriverChange(row.id,{value:row._driverId});
+      if(row._truckId) $('or_trk_'+row.id).value=row._truckId;
+    }
+  });
 }
 
 function onOrderDriverChange(rowId, sel){
@@ -975,11 +998,13 @@ function onOrderDriverChange(rowId, sel){
 }
 
 function addOrderRow(){
+  captureOrderRows();
   _orderRows.push({id:uid()});
   renderOrderRows();
 }
 
 function removeOrderRow(rowId){
+  captureOrderRows();
   _orderRows=_orderRows.filter(r=>r.id!==rowId);
   renderOrderRows();
 }
@@ -987,14 +1012,15 @@ function removeOrderRow(rowId){
 function confirmAddOrder(){
   const date=$('orderDate').value;
   if(!date){ showToast('กรุณาเลือกวันที่','error'); return; }
+  captureOrderRows();
   const newEntries=[];
   for(const row of _orderRows){
-    const driverId=$('or_drv_'+row.id)?.value;
-    const truckId=$('or_trk_'+row.id)?.value||'';
-    const from=($('or_from_'+row.id)?.value||'').trim();
-    const to=($('or_to_'+row.id)?.value||'').trim();
+    const driverId=row._driverId||'';
+    const truckId=row._truckId||'';
+    const from=(row._from||'').trim();
+    const to=(row._to||'').trim();
     if(!driverId){ showToast('กรุณาเลือกพนักงานขับทุกรายการ','error'); return; }
-    const isRound=!!$('or_round_'+row.id)?.checked;
+    const isRound=!!row._round;
     newEntries.push({id:uid(),date,driverId,truckId,from,to,fare:0,trip:0,isRound});
   }
   entries.push(...newEntries);
