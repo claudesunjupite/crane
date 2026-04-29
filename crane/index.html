@@ -3210,6 +3210,7 @@
     $('f2Result').innerHTML = isFiltered2
       ? `แสดง <strong>${list2.length}</strong> / ${jobList.length} รายการ`
       : '';
+    updateSummary();
     const tb = $('t2Body');
     if (!jobList.length) {
       tb.innerHTML = `<tr><td colspan="11"><div class="empty"><div class="ei">📋</div><p>ยังไม่มีรายการ — กดปุ่ม "+ เพิ่มเข้างาน" ในแท็บรายการคนขับ</p></div></td></tr>`;
@@ -3406,9 +3407,12 @@
   // Summary
   // ─────────────────────────────────────────
   function updateSummary() {
-    // นับทุกคน แต่คำนวณยอดเฉพาะที่ไม่ถูกระงับ
-    const done = jobList.filter(j => j.total !== null && !j.suspended);
-    $('sumEmp').textContent     = jobList.length + ' คน';
+    const filtered = filterJobList();
+    const done = filtered.filter(j => j.total !== null && !j.suspended);
+    const isFiltered = Object.values(f2).some(v => v !== '');
+    $('sumEmp').textContent     = isFiltered
+      ? `${filtered.length} / ${jobList.length} คน`
+      : `${jobList.length} คน`;
     $('sumBase').textContent    = fmt(done.reduce((s,j) => s + j.basePay,  0));
     $('sumOT').textContent      = fmt(done.reduce((s,j) => s + j.otPay,    0));
     $('sumAdvance').textContent = fmt(done.reduce((s,j) => s + j.advance,  0));
@@ -3484,7 +3488,7 @@
       job.period        = snapJob.period        || '';
       job.wDays         = snapJob.wDays         || 0;
       job.otH           = snapJob.otH           || 0;
-      job.advance       = snapJob.advance       > 0 ? snapJob.advance : 3500;
+      job.advance       = snapJob.advance != null ? snapJob.advance : 3500;  // fix: 0 is valid
       job.clientCompany = snapJob.clientCompany || '';
       job.tcNum         = snapJob.tcNum         || '';
       job.unitName      = snapJob.unitName      || '';
@@ -3492,6 +3496,12 @@
       job.otherIncomeNote  = snapJob.otherIncomeNote  || '';
       job.otherExpense     = snapJob.otherExpense     || 0;
       job.otherExpenseNote = snapJob.otherExpenseNote || '';
+      // restore rate/rateType from snapshot so calc matches original
+      if (snapJob.rateType) job.rateType = snapJob.rateType;
+      if (snapJob.rate     != null) job.rate    = snapJob.rate;
+      if (snapJob.otRate   != null) job.otRate  = snapJob.otRate;
+      // restore suspended state
+      job.suspended = snapJob.suspended || false;
       job.basePay = null; job.otPay = null; job.total = null;
       // ลอง auto-calc ถ้าครบเงื่อนไข
       if (!validateJob(job)) calcJob(job);
