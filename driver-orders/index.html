@@ -82,6 +82,12 @@
     .num-inp{width:100px;border:1px solid var(--border2);border-radius:6px;padding:.22rem .45rem;font-family:'Kanit',sans-serif;font-size:.83rem;text-align:right;background:#fff;transition:border-color .15s}
     .num-inp:focus{outline:none;border-color:var(--accent)}
     .num-inp::placeholder{color:var(--border2);font-size:.75rem}
+    /* Inline route text input */
+    .route-inp{border:none;border-bottom:1.5px solid var(--border2);border-radius:0;padding:.15rem .2rem;font-family:'Kanit',sans-serif;font-size:.8rem;color:var(--text);background:transparent;width:100%;transition:border-color .15s;min-width:60px}
+    .route-inp:focus{outline:none;border-bottom-color:var(--accent);background:#f0f6ff}
+    .route-inp::placeholder{color:var(--border2);font-size:.75rem}
+    .route-cell{display:flex;align-items:center;gap:.3rem;min-width:200px;max-width:260px}
+    .route-arrow{color:var(--muted);font-size:.75rem;flex-shrink:0}
     /* Assign trucks checkboxes */
     .truck-cb-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
     .truck-cb-item{display:flex;align-items:center;gap:.5rem;background:#f8fafc;border:1.5px solid var(--border);border-radius:8px;padding:.45rem .7rem;cursor:pointer;transition:all .15s}
@@ -893,7 +899,11 @@ function renderT3(){
       <td style="font-size:.82rem;white-space:nowrap">${fmtDateShort(e.date)}</td>
       <td style="font-size:.83rem">${drvName}${roundBadge}</td>
       <td>${trkInfo}</td>
-      <td style="font-size:.82rem;max-width:220px">${route}</td>
+      <td><div class="route-cell">
+        <input type="text" class="route-inp" value="${e.from||''}" placeholder="ต้นทาง" onchange="updateEntryStr('${e.id}','from',this.value)" title="ต้นทาง">
+        <span class="route-arrow">→</span>
+        <input type="text" class="route-inp" value="${e.to||''}" placeholder="ปลายทาง" onchange="updateEntryStr('${e.id}','to',this.value)" title="ปลายทาง">
+      </div></td>
       <td class="center"><input type="number" class="num-inp" value="${fare||''}" min="0" step="100" placeholder="0" onchange="updateEntry('${e.id}','fare',this.value)"></td>
       <td class="center"><input type="number" class="num-inp" value="${trip||''}" min="0" step="100" placeholder="0" onchange="updateEntry('${e.id}','trip',this.value)"></td>
       <td class="center"><strong style="color:var(--green)">฿${(fare+trip).toLocaleString('th-TH')}</strong></td>
@@ -905,6 +915,11 @@ function renderT3(){
 function updateEntry(id, field, val){
   const e=entries.find(x=>x.id===id);
   if(e){ e[field]=parseFloat(val)||0; saveToStorage(); renderT3(); }
+}
+function updateEntryStr(id, field, val){
+  const e=entries.find(x=>x.id===id);
+  if(e){ e[field]=val.trim(); saveToStorage(); }
+  // no re-render — keep focus in input
 }
 
 function deleteEntry(id){
