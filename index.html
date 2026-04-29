@@ -41,10 +41,10 @@
     .home-heading h2 { font-size: 1.4rem; font-weight: 600; color: var(--text2); margin-bottom: 0.4rem; }
     .home-heading p { font-size: 0.88rem; color: var(--muted); }
     .home-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 1.5rem; max-width: 860px; width: 100%;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem; max-width: 1100px; width: 100%;
     }
-    @media (max-width: 620px) { .home-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { .home-grid { grid-template-columns: 1fr; } }
     .home-card {
       background: var(--surface); border: 2px solid var(--border);
       border-radius: 16px; padding: 2.5rem 2rem;
@@ -97,6 +97,13 @@
         <div class="home-card-title">เบี้ยเลี้ยงและรายได้รายจ่ายอื่นๆ</div>
         <div class="home-card-desc">บันทึกเบี้ยเลี้ยงรายวัน รายได้อื่นๆ<br>รายจ่ายอื่นๆ สรุปยอดพร้อมพิมพ์</div>
         <div class="home-card-badge">Allowance System</div>
+        <div class="home-card-arrow">→</div>
+      </a>
+      <a href="driver-orders/index.html" class="home-card">
+        <div class="home-card-icon">📦</div>
+        <div class="home-card-title">ใบแจ้งหนี้ / ใบสั่งงานคนขับ</div>
+        <div class="home-card-desc">บันทึกใบสั่งงานรายวัน ค่าขนส่ง ค่าเที่ยว<br>ปฏิทินรายเดือน พิมพ์ใบ บริษัท เอส.เจ.</div>
+        <div class="home-card-badge">Work Order System</div>
         <div class="home-card-arrow">→</div>
       </a>
     </div>
