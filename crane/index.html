@@ -1761,6 +1761,14 @@
         </div>
         <div class="print-setting-item" style="margin-top:0.5rem;display:flex;gap:1rem;flex-wrap:wrap">
           <div style="display:flex;flex-direction:column;gap:4px">
+            <span class="print-setting-label">ประเภทเรท</span>
+            <select class="print-orient-select" id="printRateTypeFilter">
+              <option value="">ทั้งหมด</option>
+              <option value="รายวัน">รายวัน</option>
+              <option value="รายเดือน">รายเดือน</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
             <span class="print-setting-label">กรองบริษัท</span>
             <select class="print-orient-select" id="printDeptFilter">
               <option value="">ทั้งหมด</option>
@@ -2821,7 +2829,6 @@
   function tryAutoCalc(jobId) {
     const j = jobList.find(x => x.id === jobId);
     if (!j || j.suspended) return;
-    readInputs(j);
     const err = validateJob(j);
     if (!err) {
       calcJob(j);
@@ -3778,9 +3785,11 @@
 
     let data = filterJobList();
     if (calcOnly) data = data.filter(j => j.total !== null);
+    const rateTypeFilter = $('printRateTypeFilter').value;
     const deptFilter   = $('printDeptFilter').value;
     const statusFilter = $('printStatusFilter').value;
     const accFilter    = $('printAccFilter').value;
+    if (rateTypeFilter) data = data.filter(j => j.rateType === rateTypeFilter);
     if (deptFilter)   data = data.filter(j => j.dept === deptFilter);
     if (statusFilter === 'active')    data = data.filter(j => !j.suspended);
     if (statusFilter === 'suspended') data = data.filter(j =>  j.suspended);
