@@ -444,6 +444,11 @@
       #printPreview .pr-sign-box{flex:1;border-top:1px solid #888;padding-top:4px;text-align:center;}
       #printPreview .pr-total-row td{font-weight:700;background:#f1f5f9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       #printPreview .pr-acc-summary{font-size:8pt;border-top:1px solid #ccc;margin-top:6px;padding-top:4px;color:#444;}
+      #printPreview table{page-break-inside:auto;}
+      #printPreview thead{display:table-header-group;}
+      #printPreview tfoot{display:table-footer-group;}
+      #printPreview tr{page-break-inside:avoid;page-break-after:auto;}
+      #printPreview .pr-emp-block{page-break-inside:avoid;}
     }
   </style>
   <!-- Firebase Realtime Database -->
@@ -2263,15 +2268,16 @@ function doPrint(){
   const statusFilter=$('printStatusFilter').value;
   const sortBy=$('printSortBy').value;
 
-  let data=filterJobList();
+  // ใช้ jobList โดยตรง ไม่ใช้ filter ของ Tab 2 (ช่วงวันที่ / searchQuery)
+  let data=[...jobList];
   if(calcOnly) data=data.filter(j=>j.total!==null);
   if(deptFilter) data=data.filter(j=>j.dept===deptFilter);
   if(tcFilter) data=data.filter(j=>j.tc===tcFilter);
   if(statusFilter==='active') data=data.filter(j=>!j.suspended);
   if(statusFilter==='suspended') data=data.filter(j=>j.suspended);
-  if(sortBy==='fn')      data=[...data].sort((a,b)=>(a.fn+a.ln).localeCompare(b.fn+b.ln,'th'));
-  if(sortBy==='fn_desc') data=[...data].sort((a,b)=>(b.fn+b.ln).localeCompare(a.fn+a.ln,'th'));
-  if(sortBy==='tc')      data=[...data].sort((a,b)=>(a.tc||'').localeCompare(b.tc||'','th')||(a.fn+a.ln).localeCompare(b.fn+b.ln,'th'));
+  if(sortBy==='fn')      data.sort((a,b)=>(a.fn+a.ln).localeCompare(b.fn+b.ln,'th'));
+  if(sortBy==='fn_desc') data.sort((a,b)=>(b.fn+b.ln).localeCompare(a.fn+a.ln,'th'));
+  if(sortBy==='tc')      data.sort((a,b)=>(a.tc||'').localeCompare(b.tc||'','th')||(a.fn+a.ln).localeCompare(b.fn+b.ln,'th'));
   if(!data.length){ showToast('ไม่มีรายการที่จะพิมพ์','warning'); return; }
 
   const now=new Date();
