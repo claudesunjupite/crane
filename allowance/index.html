@@ -1528,7 +1528,8 @@ function printOnePerson(empId){
         </tr>
       </tbody>
     </table>`;
-  window.print();
+  window.addEventListener('afterprint',()=>{ $('printPreview').innerHTML=''; },{once:true});
+  setTimeout(()=>window.print(),80);
 }
 
 // Items management
@@ -2203,7 +2204,8 @@ function doHistPrint(){
       <div class="pr-sign-box">ผู้อนุมัติ<br><br><br>____________________</div>
     </div>`;
   closeHistPrintModal();
-  window.print();
+  window.addEventListener('afterprint',()=>{ $('printPreview').innerHTML=''; },{once:true});
+  setTimeout(()=>window.print(),80);
 }
 function printSnapshot(hid){
   const h=payHistory.find(x=>x.id===hid); if(!h) return;
@@ -2227,7 +2229,8 @@ function printSnapshot(hid){
       <div class="pr-sign-box">ผู้ตรวจสอบ<br><br><br>____________________</div>
       <div class="pr-sign-box">ผู้อนุมัติ<br><br><br>____________________</div>
     </div>`;
-  window.print();
+  window.addEventListener('afterprint',()=>{ $('printPreview').innerHTML=''; },{once:true});
+  setTimeout(()=>window.print(),80);
 }
 
 // ── Print ──
@@ -2292,7 +2295,8 @@ function doPrint(){
       <div class="pr-sign-box">ผู้อนุมัติ<br><br><br>____________________</div>
     </div>`:''}`;
   closePrintModal();
-  window.print();
+  window.addEventListener('afterprint',()=>{ $('printPreview').innerHTML=''; },{once:true});
+  setTimeout(()=>window.print(),80);
 }
 
 // ── Export CSV ──
