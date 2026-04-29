@@ -1037,7 +1037,7 @@ const PRINT_COLS = [
   { key:'name',     label:'ชื่อ-นามสกุล',        def:true,  fn:j=>`${j.fn} ${j.ln}` },
   { key:'dept',     label:'บริษัท',               def:true,  fn:j=>j.dept||'—' },
   { key:'tc',       label:'หน้าที่',              def:true,  fn:j=>j.tc||'—' },
-  { key:'period',   label:'หมายเหตุ/งวด',        def:false, fn:j=>j.period||'—' },
+  { key:'period',   label:'หมายเหตุ',              def:true,  fn:j=>{ const ns=[...new Set((j.items||[]).map(i=>i.note).filter(Boolean))]; return ns.length?ns.join(' / '):'—'; } },
   { key:'ovDays',   label:'วันค้างคืน',           def:true,  fn:j=>j.overnightDays||0 },
   { key:'ovRate',   label:'เบี้ยค้างคืน/วัน',    def:false, fn:j=>`฿${(+j.overnightRate||0).toLocaleString('th-TH')}` },
   { key:'ovAmt',    label:'ยอดค้างคืน',           def:true,  fn:j=>`฿${((j.overnightDays||0)*(+j.overnightRate||0)).toLocaleString('th-TH')}` },
