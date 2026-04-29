@@ -3228,7 +3228,7 @@
           </td>
           <td>
             <input class="t2-input" type="number" min="0" max="3500" step="1"
-              data-jid="${j.id}" data-field="advance" value="${j.advance || ''}" placeholder="0"
+              data-jid="${j.id}" data-field="advance" value="${j.advance != null ? j.advance : 3500}" placeholder="3500"
               style="width:90px"
               oninput="onJobInput(${j.id},'advance',this.value,3500)">
           </td>
