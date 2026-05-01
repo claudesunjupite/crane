@@ -416,6 +416,8 @@
     .hist-body.open{display:block;}
     .hist-print{background:#f0fdf4;border:1.5px solid #bbf7d0;color:var(--green);padding:0.3rem 0.75rem;border-radius:6px;font-family:'Kanit',sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
     .hist-print:hover{background:#dcfce7;border-color:var(--green);}
+    .hist-restore{background:#eff6ff;border:1.5px solid #bfdbfe;color:var(--accent);padding:0.3rem 0.75rem;border-radius:6px;font-family:'Kanit',sans-serif;font-size:0.78rem;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+    .hist-restore:hover{background:#dbeafe;border-color:var(--accent);}
     .hist-del{background:none;border:1px solid #fecaca;color:var(--red);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:0.78rem;display:flex;align-items:center;justify-content:center;}
     .hist-del:hover{background:#fee2e2;}
 
@@ -2163,6 +2165,7 @@ function renderT3(){
             <div class="hist-title">บันทึกวันที่ ${fmtDate(d,false)} ${fmtTime(d)}</div>
             <div class="hist-meta">ยอดรวม ฿${total.toLocaleString('th-TH')}</div>
           </div>
+          <button class="hist-restore" onclick="event.stopPropagation();confirmRestoreHistory(${h.id})">↩ โหลดกลับ</button>
           <button class="hist-print" onclick="event.stopPropagation();openHistPrintModal(${h.id})">🖨 พิมพ์</button>
           <button class="hist-del" onclick="event.stopPropagation();showConfirmModal({icon:'🗑️',title:'ลบประวัติ',msg:'ลบประวัติรายการนี้?',okLabel:'ลบเลย',okClass:'btn-confirm-del'},()=>deleteHistory(${h.id}))">✕</button>
           <span class="hist-arrow" id="harrow_${h.id}">▶</span>
@@ -2201,6 +2204,60 @@ function deleteHistory(hid){
   payHistory=payHistory.filter(h=>h.id!==hid);
   saveToStorage(); renderT3();
   showToast('ลบประวัติเรียบร้อย','success');
+}
+
+function confirmRestoreHistory(hid){
+  const h=payHistory.find(x=>x.id===hid); if(!h) return;
+  const d=new Date(h.date);
+  showConfirmModal({
+    icon:'↩',
+    title:'โหลดข้อมูลกลับ',
+    msg:`โหลดข้อมูล <strong>${h.jobs.length} คน</strong> จากบันทึกวันที่ <strong>${fmtDate(d,false)} ${fmtTime(d)}</strong> กลับเข้าหน้าบันทึกรายการ?<br><span style="color:var(--muted);font-size:0.82rem">รายการวันที่จะถูกโหลดกลับ ยอดจะ reset ให้คำนวณใหม่</span>`,
+    okLabel:'↩ โหลดกลับ',
+    okClass:'btn-save-edit'
+  }, ()=>restoreFromHistory(hid));
+}
+
+function restoreFromHistory(hid){
+  const h=payHistory.find(x=>x.id===hid); if(!h) return;
+  let restored=0, added=0;
+  h.jobs.forEach(snapJob=>{
+    let job=jobList.find(j=>j.empId===snapJob.empId);
+    if(!job){
+      // ลองหา employee ที่ยังมีอยู่
+      const emp=employees.find(e=>e.id===snapJob.empId);
+      if(emp){
+        job={
+          id:uid(), empId:emp.id, fn:emp.fn, ln:emp.ln,
+          dept:emp.dept, tc:emp.tc,
+          overnightRate:emp.overnightRate||0,
+          nonOvernightRate:emp.nonOvernightRate||0,
+          items:[], overnightDays:0, nonOvernightDays:0,
+          period:'', lockedMonths:[], total:null, suspended:false
+        };
+        jobList.push(job);
+        added++;
+      } else return; // employee ถูกลบไปแล้ว ข้าม
+    }
+    // โหลด items กลับ (deep copy)
+    job.items = JSON.parse(JSON.stringify(snapJob.items||[]));
+    job.period = snapJob.period||'';
+    // restore rates จาก snapshot
+    if(snapJob.overnightRate!=null)    job.overnightRate    = snapJob.overnightRate;
+    if(snapJob.nonOvernightRate!=null) job.nonOvernightRate = snapJob.nonOvernightRate;
+    // คำนวณใหม่จาก items ที่โหลดกลับ
+    job.overnightDays=0; job.nonOvernightDays=0; job.total=null;
+    recomputeJob(job.id);
+    if(job.items.length) job.total=calcJobTotal(job);
+    restored++;
+  });
+  renderT2(); updateSummary(); saveToStorage();
+  // switch ไปหน้า Tab 2
+  document.querySelectorAll('.tab-btn')[1].click();
+  const msg=added>0
+    ?`โหลดกลับ ${restored} คน (เพิ่มใหม่ ${added} คน) เรียบร้อย`
+    :`โหลดกลับ ${restored} คน เรียบร้อย`;
+  setTimeout(()=>showToast(msg,'success'),100);
 }
 
 let _histPrintId = null;
